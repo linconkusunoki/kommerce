@@ -1,0 +1,26 @@
+import type { FC } from "hono/jsx";
+
+export const Footer: FC = () => {
+  return (
+    <footer class="footer">
+      <div class="container footer-inner">
+        <div class="footer-brand">
+          <span class="logo">Kommerce</span>
+          <p>Your one-stop clothing store.</p>
+        </div>
+        <div class="footer-links">
+          <h4>Shop</h4>
+          <a href="/#categories">Categories</a>
+          <a href="/#featured">Featured</a>
+        </div>
+        <div class="footer-links">
+          <h4>Account</h4>
+          <a href="/admin/login">Admin</a>
+        </div>
+      </div>
+      <div class="container footer-bottom">
+        <p>&copy; {new Date().getFullYear()} Kommerce. All rights reserved.</p>
+      </div>
+    </footer>
+  );
+};

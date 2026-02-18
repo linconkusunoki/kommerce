@@ -14,6 +14,7 @@ import auth from "./routes/admin/auth.tsx";
 import adminProducts from "./routes/admin/products.tsx";
 import adminCategories from "./routes/admin/categories.tsx";
 import adminOrders from "./routes/admin/orders.tsx";
+import { logger } from "hono/logger";
 
 const app = new Hono();
 
@@ -23,6 +24,19 @@ app.use("/public/*", serveStatic({ root: "./" }));
 
 // Visitor session for all public routes
 app.use("*", visitorSession);
+
+// 1-year cache for public GET pages
+app.use("/", async (c, next) => {
+  await next();
+  c.header("Cache-Control", "public, max-age=31536000");
+});
+app.use("/products/*", async (c, next) => {
+  await next();
+  c.header("Cache-Control", "public, max-age=31536000");
+});
+
+// Add logger
+app.use(logger());
 
 // Public routes
 app.route("/", home);
@@ -42,7 +56,9 @@ admin.get("/", (c) => {
   const productCount = (db.query("SELECT COUNT(*) as count FROM products").get() as { count: number }).count;
   const categoryCount = (db.query("SELECT COUNT(*) as count FROM categories").get() as { count: number }).count;
   const orderCount = (db.query("SELECT COUNT(*) as count FROM orders").get() as { count: number }).count;
-  const pendingOrders = (db.query("SELECT COUNT(*) as count FROM orders WHERE status = 'pending'").get() as { count: number }).count;
+  const pendingOrders = (
+    db.query("SELECT COUNT(*) as count FROM orders WHERE status = 'pending'").get() as { count: number }
+  ).count;
 
   return c.html(
     <AdminLayout title="Dashboard">
@@ -64,7 +80,7 @@ admin.get("/", (c) => {
           <span class="stat-label">Pending Orders</span>
         </div>
       </div>
-    </AdminLayout>
+    </AdminLayout>,
   );
 });
 

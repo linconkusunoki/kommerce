@@ -133,6 +133,12 @@ cart.get("/cart", (c) => {
   );
 });
 
+cart.get("/api/cart/count", (c) => {
+  const visitorId = c.get("visitorId" as never) as string;
+  const count = getCartCount(visitorId);
+  return c.json({ count });
+});
+
 cart.post("/cart/add", async (c) => {
   const db = getDb();
   const visitorId = c.get("visitorId" as never) as string;

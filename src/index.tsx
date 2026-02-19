@@ -10,6 +10,8 @@ import home from "./routes/home.tsx";
 import product from "./routes/product.tsx";
 import cart from "./routes/cart.tsx";
 import checkout from "./routes/checkout.tsx";
+import category from "./routes/category.tsx";
+import search from "./routes/search.tsx";
 import auth from "./routes/admin/auth.tsx";
 import adminProducts from "./routes/admin/products.tsx";
 import adminCategories from "./routes/admin/categories.tsx";
@@ -43,6 +45,8 @@ app.route("/", home);
 app.route("/", product);
 app.route("/", cart);
 app.route("/", checkout);
+app.route("/", category);
+app.route("/", search);
 
 // Admin auth (no middleware)
 app.route("/admin", auth);
@@ -59,6 +63,17 @@ admin.get("/", (c) => {
   const pendingOrders = (
     db.query("SELECT COUNT(*) as count FROM orders WHERE status = 'pending'").get() as { count: number }
   ).count;
+  const totalRevenue = (
+    db.query("SELECT COALESCE(SUM(total), 0) as revenue FROM orders WHERE status != 'cancelled'").get() as { revenue: number }
+  ).revenue;
+  const monthRevenue = (
+    db.query(
+      "SELECT COALESCE(SUM(total), 0) as revenue FROM orders WHERE status != 'cancelled' AND strftime('%Y-%m', created_at) = strftime('%Y-%m', 'now')"
+    ).get() as { revenue: number }
+  ).revenue;
+  const avgOrder = (
+    db.query("SELECT COALESCE(AVG(total), 0) as avg FROM orders WHERE status != 'cancelled'").get() as { avg: number }
+  ).avg;
 
   return c.html(
     <AdminLayout title="Dashboard">
@@ -78,6 +93,18 @@ admin.get("/", (c) => {
         <div class="stat-card">
           <span class="stat-number">{pendingOrders}</span>
           <span class="stat-label">Pending Orders</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-number">${totalRevenue.toFixed(2)}</span>
+          <span class="stat-label">Total Revenue</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-number">${monthRevenue.toFixed(2)}</span>
+          <span class="stat-label">Revenue This Month</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-number">${avgOrder.toFixed(2)}</span>
+          <span class="stat-label">Avg Order Value</span>
         </div>
       </div>
     </AdminLayout>,

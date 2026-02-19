@@ -4,6 +4,7 @@ import { Layout } from "../components/Layout.tsx";
 import { Header } from "../components/Header.tsx";
 import { Footer } from "../components/Footer.tsx";
 import { getCartCount } from "../middleware/visitor.ts";
+import { sendOrderConfirmation } from "../lib/email.ts";
 
 type CartItem = {
   id: number;
@@ -177,7 +178,7 @@ checkout.post("/checkout", async (c) => {
   const items = db
     .query(
       `
-    SELECT ci.quantity,
+    SELECT ci.variant_id, ci.quantity,
            pv.size, pv.color,
            p.name as product_name, p.slug as product_slug,
            p.price as product_price
@@ -188,6 +189,7 @@ checkout.post("/checkout", async (c) => {
   `,
     )
     .all(visitorId) as {
+    variant_id: number;
     quantity: number;
     size: string;
     color: string;
@@ -203,37 +205,61 @@ checkout.post("/checkout", async (c) => {
   const subtotal = items.reduce((sum, item) => sum + item.product_price * item.quantity, 0);
   const orderNumber = generateOrderNumber();
 
-  // Create order
-  const result = db
-    .query(
-      `INSERT INTO orders (order_number, email, name, address, city, postal_code, country, phone, notes, subtotal, total)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    )
-    .run(orderNumber, email, name, address, city, postalCode, country, phone, notes, subtotal, subtotal);
-
-  const orderId = Number(result.lastInsertRowid);
-
-  // Create order items
   const insertItem = db.prepare(
     `INSERT INTO order_items (order_id, product_name, product_slug, variant_size, variant_color, price, quantity, total)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
   );
+  const decrementStock = db.prepare(
+    `UPDATE product_variants SET stock = stock - ? WHERE id = ?`,
+  );
 
-  for (const item of items) {
-    insertItem.run(
-      orderId,
-      item.product_name,
-      item.product_slug,
-      item.size,
-      item.color,
-      item.product_price,
-      item.quantity,
-      item.product_price * item.quantity,
-    );
-  }
+  // Create order, items, and decrement stock atomically
+  const createOrder = db.transaction(() => {
+    const result = db
+      .query(
+        `INSERT INTO orders (order_number, email, name, address, city, postal_code, country, phone, notes, subtotal, total)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      )
+      .run(orderNumber, email, name, address, city, postalCode, country, phone, notes, subtotal, subtotal);
 
-  // Clear cart
-  db.query("DELETE FROM cart_items WHERE session_id = ?").run(visitorId);
+    const orderId = Number(result.lastInsertRowid);
+
+    for (const item of items) {
+      insertItem.run(
+        orderId,
+        item.product_name,
+        item.product_slug,
+        item.size,
+        item.color,
+        item.product_price,
+        item.quantity,
+        item.product_price * item.quantity,
+      );
+      decrementStock.run(item.quantity, item.variant_id);
+    }
+
+    db.query("DELETE FROM cart_items WHERE session_id = ?").run(visitorId);
+
+    return orderId;
+  });
+
+  createOrder();
+
+  // Send confirmation email (non-blocking; skipped if RESEND_API_KEY not set)
+  const orderItems = db
+    .query("SELECT oi.* FROM order_items oi JOIN orders o ON oi.order_id = o.id WHERE o.order_number = ?")
+    .all(orderNumber) as {
+    product_name: string;
+    variant_size: string;
+    variant_color: string;
+    quantity: number;
+    price: number;
+    total: number;
+  }[];
+  sendOrderConfirmation(
+    { order_number: orderNumber, email, name, address, city, postal_code: postalCode, country, total: subtotal },
+    orderItems,
+  );
 
   return c.redirect(`/order/${orderNumber}`);
 });
@@ -304,7 +330,11 @@ checkout.get("/order/:orderNumber", (c) => {
               <p>
                 Thank you, {order.name}. Your order <strong>{order.order_number}</strong> has been placed.
               </p>
-              <p class="order-email-note">A confirmation would be sent to {order.email}</p>
+              <p class="order-email-note">
+                {process.env.RESEND_API_KEY
+                  ? `A confirmation has been sent to ${order.email}`
+                  : `Order details saved for ${order.email}`}
+              </p>
             </div>
 
             <div class="order-details-grid">

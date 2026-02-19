@@ -7,18 +7,20 @@ type CategoryCardProps = {
   image_url: string | null;
 };
 
-export const CategoryCard: FC<CategoryCardProps> = ({ name, description, image_url }) => {
+export const CategoryCard: FC<CategoryCardProps> = ({ name, slug, description, image_url }) => {
   return (
-    <div class="category-card">
-      <div class="category-card-image">
-        {image_url
-          ? <img src={image_url} alt={name} />
-          : <div class="category-card-placeholder" />}
+    <a href={"/categories/" + slug} class="category-card-link">
+      <div class="category-card">
+        <div class="category-card-image">
+          {image_url
+            ? <img src={image_url} alt={name} />
+            : <div class="category-card-placeholder" />}
+        </div>
+        <div class="category-card-body">
+          <h3 class="category-card-title">{name}</h3>
+          {description && <p class="category-card-desc">{description}</p>}
+        </div>
       </div>
-      <div class="category-card-body">
-        <h3 class="category-card-title">{name}</h3>
-        {description && <p class="category-card-desc">{description}</p>}
-      </div>
-    </div>
+    </a>
   );
 };

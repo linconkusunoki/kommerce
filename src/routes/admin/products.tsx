@@ -16,9 +16,13 @@ products.get("/", (c) => {
   const allProducts = db
     .query(
       `
-    SELECT p.*, c.name as category_name
+    SELECT p.*, c.name as category_name,
+           COALESCE(SUM(pv.stock), 0) as total_stock,
+           COUNT(pv.id) as variant_count
     FROM products p
     JOIN categories c ON p.category_id = c.id
+    LEFT JOIN product_variants pv ON pv.product_id = p.id
+    GROUP BY p.id
     ORDER BY p.created_at DESC
   `,
     )
@@ -29,6 +33,8 @@ products.get("/", (c) => {
     price: number;
     featured: number;
     category_name: string;
+    total_stock: number;
+    variant_count: number;
   }[];
 
   return c.html(
@@ -44,6 +50,7 @@ products.get("/", (c) => {
             <th>Name</th>
             <th>Category</th>
             <th>Price</th>
+            <th>Stock</th>
             <th>Featured</th>
             <th>Actions</th>
           </tr>
@@ -54,6 +61,9 @@ products.get("/", (c) => {
               <td>{p.name}</td>
               <td>{p.category_name}</td>
               <td>${p.price.toFixed(2)}</td>
+              <td style={p.total_stock === 0 ? "color: var(--color-danger, #dc2626); font-weight: 600;" : ""}>
+                {p.total_stock}
+              </td>
               <td>{p.featured ? "Yes" : "No"}</td>
               <td class="admin-actions">
                 <a href={`/admin/products/${p.id}/edit`} class="btn btn-sm">
@@ -73,9 +83,18 @@ products.get("/", (c) => {
   );
 });
 
+type Variant = {
+  id: number;
+  size: string;
+  color: string;
+  stock: number;
+  sku: string | null;
+};
+
 function ProductForm({
   product,
   categories,
+  variants,
   error,
 }: {
   product?: {
@@ -90,6 +109,7 @@ function ProductForm({
     featured: number;
   };
   categories: { id: number; name: string }[];
+  variants?: Variant[];
   error?: string;
 }) {
   const isEdit = !!product;
@@ -162,6 +182,67 @@ function ProductForm({
           </a>
         </div>
       </form>
+
+      {isEdit && product && (
+        <div style="margin-top: 2rem;">
+          <h2 style="margin-bottom: 1rem;">Variants</h2>
+          {variants && variants.length > 0 ? (
+            <table class="admin-table" style="margin-bottom: 1.5rem;">
+              <thead>
+                <tr>
+                  <th>Size</th>
+                  <th>Color</th>
+                  <th>Stock</th>
+                  <th>SKU</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {variants.map((v) => (
+                  <tr>
+                    <td>{v.size}</td>
+                    <td>{v.color}</td>
+                    <td>{v.stock}</td>
+                    <td>{v.sku ?? "—"}</td>
+                    <td>
+                      <form method="post" action={`/admin/products/${product.id}/variants/${v.id}/delete`} style="display:inline">
+                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete this variant?')">
+                          Delete
+                        </button>
+                      </form>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <p style="color: var(--color-text-muted); margin-bottom: 1rem;">No variants yet.</p>
+          )}
+
+          <h3 style="margin-bottom: 0.75rem;">Add Variant</h3>
+          <form method="post" action={`/admin/products/${product.id}/variants/add`} class="admin-form" style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end;">
+            <div class="form-group" style="flex: 1; min-width: 120px;">
+              <label for="v_size">Size</label>
+              <input type="text" id="v_size" name="size" placeholder="M" required />
+            </div>
+            <div class="form-group" style="flex: 1; min-width: 120px;">
+              <label for="v_color">Color</label>
+              <input type="text" id="v_color" name="color" placeholder="Black" required />
+            </div>
+            <div class="form-group" style="flex: 1; min-width: 100px;">
+              <label for="v_stock">Stock</label>
+              <input type="number" id="v_stock" name="stock" min="0" value="0" required />
+            </div>
+            <div class="form-group" style="flex: 2; min-width: 160px;">
+              <label for="v_sku">SKU (optional)</label>
+              <input type="text" id="v_sku" name="sku" placeholder="auto-generated" />
+            </div>
+            <div class="form-group">
+              <button type="submit" class="btn btn-primary">Add Variant</button>
+            </div>
+          </form>
+        </div>
+      )}
     </AdminLayout>
   );
 }
@@ -185,8 +266,9 @@ products.post("/new", async (c) => {
   const name = (body["name"] as string).trim();
   const slug = slugify(name);
 
+  let newId: number;
   try {
-    db.prepare(
+    const result = db.prepare(
       `
       INSERT INTO products (name, slug, description, price, compare_at_price, category_id, image_url, featured)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -201,22 +283,25 @@ products.post("/new", async (c) => {
       (body["image_url"] as string) || null,
       body["featured"] ? 1 : 0,
     );
+    newId = Number(result.lastInsertRowid);
   } catch (e: any) {
     return c.html(<ProductForm categories={categories} error={e.message} />);
   }
 
-  return c.redirect("/admin/products");
+  return c.redirect(`/admin/products/${newId}/edit`);
 });
 
 products.get("/:id/edit", (c) => {
   const db = getDb();
-  const product = db.query("SELECT * FROM products WHERE id = ?").get(c.req.param("id")) as any;
+  const id = c.req.param("id");
+  const product = db.query("SELECT * FROM products WHERE id = ?").get(id) as any;
   if (!product) return c.notFound();
   const categories = db.query("SELECT id, name FROM categories ORDER BY sort_order").all() as {
     id: number;
     name: string;
   }[];
-  return c.html(<ProductForm product={product} categories={categories} />);
+  const variants = db.query("SELECT * FROM product_variants WHERE product_id = ? ORDER BY size, color").all(id) as Variant[];
+  return c.html(<ProductForm product={product} categories={categories} variants={variants} />);
 });
 
 products.post("/:id/edit", async (c) => {
@@ -250,10 +335,39 @@ products.post("/:id/edit", async (c) => {
     );
   } catch (e: any) {
     const product = db.query("SELECT * FROM products WHERE id = ?").get(id) as any;
-    return c.html(<ProductForm product={product} categories={categories} error={e.message} />);
+    const variants = db.query("SELECT * FROM product_variants WHERE product_id = ? ORDER BY size, color").all(id) as Variant[];
+    return c.html(<ProductForm product={product} categories={categories} variants={variants} error={e.message} />);
   }
 
   return c.redirect("/admin/products");
+});
+
+products.post("/:id/variants/add", async (c) => {
+  const db = getDb();
+  const id = c.req.param("id");
+  const body = await c.req.parseBody();
+
+  const product = db.query("SELECT slug FROM products WHERE id = ?").get(id) as { slug: string } | null;
+  if (!product) return c.notFound();
+
+  const size = (body["size"] as string).trim();
+  const color = (body["color"] as string).trim();
+  const stock = parseInt(body["stock"] as string) || 0;
+  const sku = (body["sku"] as string)?.trim() || `${product.slug}-${slugify(size)}-${slugify(color)}`;
+
+  db.prepare(
+    `INSERT INTO product_variants (product_id, size, color, stock, sku) VALUES (?, ?, ?, ?, ?)`,
+  ).run(id, size, color, stock, sku);
+
+  return c.redirect(`/admin/products/${id}/edit`);
+});
+
+products.post("/:id/variants/:variantId/delete", (c) => {
+  const db = getDb();
+  const id = c.req.param("id");
+  const variantId = c.req.param("variantId");
+  db.prepare("DELETE FROM product_variants WHERE id = ? AND product_id = ?").run(variantId, id);
+  return c.redirect(`/admin/products/${id}/edit`);
 });
 
 products.post("/:id/delete", (c) => {

@@ -13,6 +13,15 @@ export const Header: FC<HeaderProps> = ({ cartCount = 0 }) => {
           <a href="/">Home</a>
           <a href="/#categories">Categories</a>
           <a href="/#featured">Featured</a>
+          <form method="get" action="/search" class="nav-search">
+            <input type="text" name="q" placeholder="Search..." class="nav-search-input" />
+            <button type="submit" class="nav-search-btn" aria-label="Search">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+            </button>
+          </form>
           <a href="/cart" class="nav-cart">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="9" cy="21" r="1" />

@@ -1,0 +1,69 @@
+@scope (.product-card) {
+  :scope {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: box-shadow 0.2s, transform 0.2s;
+  }
+
+  :scope:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+  }
+
+  .product-card-image {
+    aspect-ratio: 1;
+    background: #f3f4f6;
+    position: relative;
+  }
+
+  .product-card-placeholder {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #e5e7eb, #d1d5db);
+  }
+
+  .product-card-body { padding: 1rem; }
+
+  .product-card-category {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--color-accent);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .product-card-title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0.25rem 0 0.5rem;
+  }
+
+  .product-card-price {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+}
+
+.price { font-weight: 600; }
+.price-sale { color: var(--color-sale); }
+.price-compare {
+  color: var(--color-text-muted);
+  text-decoration: line-through;
+  font-weight: 400;
+  font-size: 0.9rem;
+}
+
+.badge {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.badge-sale { background: var(--color-sale); color: white; }

@@ -1,0 +1,55 @@
+@scope (.footer) {
+  :scope {
+    background: var(--color-primary);
+    color: rgba(255, 255, 255, 0.8);
+    padding: 3rem 0 1.5rem;
+    margin-top: 4rem;
+  }
+
+  .footer-inner {
+    display: flex;
+    gap: 4rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .footer-brand .logo { color: white; }
+
+  .footer-brand p {
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  .footer-links {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .footer-links h4 {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: white;
+    margin-bottom: 0.25rem;
+  }
+
+  .footer-links a {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.5);
+    transition: color 0.15s;
+  }
+
+  .footer-links a:hover { color: white; }
+
+  .footer-bottom { padding-top: 1.5rem; }
+
+  .footer-bottom p {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.35);
+  }
+
+  @media (max-width: 600px) {
+    .footer-inner { flex-direction: column; gap: 2rem; }
+  }
+}

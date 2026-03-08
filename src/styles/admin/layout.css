@@ -1,0 +1,84 @@
+.admin-wrapper { display: flex; min-height: 100vh; }
+.admin-main { flex: 1; padding: 2rem; }
+.admin-page-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem; }
+.admin-toolbar { display: flex; justify-content: flex-end; margin-bottom: 1rem; }
+.admin-form { max-width: 600px; }
+
+@scope (.admin-sidebar) {
+  :scope {
+    width: 240px;
+    background: var(--color-primary);
+    color: white;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+  }
+
+  .admin-logo {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 2rem;
+    display: block;
+  }
+
+  .admin-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    flex: 1;
+  }
+
+  .admin-nav a {
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.7);
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .admin-nav a:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+  }
+
+  .admin-sidebar-footer {
+    margin-top: auto;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .admin-sidebar-footer .btn-outline {
+    color: rgba(255, 255, 255, 0.7);
+    border-color: rgba(255, 255, 255, 0.2);
+    width: 100%;
+  }
+
+  .admin-sidebar-footer .btn-outline:hover {
+    color: white;
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  @media (max-width: 768px) {
+    :scope {
+      width: 100%;
+      flex-direction: row;
+      align-items: center;
+      padding: 1rem;
+    }
+
+    .admin-nav { flex-direction: row; gap: 0.5rem; }
+
+    .admin-sidebar-footer {
+      margin-top: 0;
+      padding-top: 0;
+      border-top: none;
+      margin-left: auto;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-wrapper { flex-direction: column; }
+}

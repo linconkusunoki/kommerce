@@ -4,19 +4,28 @@ import { Layout } from "../components/Layout.tsx";
 import { Header } from "../components/Header.tsx";
 import { Footer } from "../components/Footer.tsx";
 import { ProductCard } from "../components/ProductCard.tsx";
-import { getCartCount } from "../middleware/visitor.ts";
+import { CartService } from "../services/CartService.ts";
+import { ProductService } from "../services/ProductService.ts";
+import { CategoryService } from "../services/CategoryService.ts";
+import { SqliteCartRepository } from "../repositories/CartRepository.ts";
+import { SqliteVariantRepository } from "../repositories/VariantRepository.ts";
+import { SqliteProductRepository } from "../repositories/ProductRepository.ts";
+import { SqliteCategoryRepository } from "../repositories/CategoryRepository.ts";
+
+const db = getDb();
+const variantRepo = new SqliteVariantRepository(db);
+const cartService = new CartService(new SqliteCartRepository(db), variantRepo);
+const productService = new ProductService(new SqliteProductRepository(db), variantRepo);
+const categoryService = new CategoryService(new SqliteCategoryRepository(db));
 
 const category = new Hono();
 
 category.get("/categories/:slug", (c) => {
-  const db = getDb();
-  const visitorId = c.get("visitorId") as string;
-  const cartCount = getCartCount(visitorId);
+  const visitorId = c.get("visitorId" as never) as string;
+  const cartCount = cartService.getCount(visitorId);
   const slug = c.req.param("slug");
 
-  const cat = db
-    .query("SELECT * FROM categories WHERE slug = ?")
-    .get(slug) as { id: number; name: string; slug: string; description: string | null } | null;
+  const cat = categoryService.getBySlug(slug);
 
   if (!cat) {
     return c.html(
@@ -25,7 +34,9 @@ category.get("/categories/:slug", (c) => {
         <main class="section">
           <div class="container" style="text-align: center; padding: 4rem 0;">
             <h1>Category not found</h1>
-            <a href="/" class="btn btn-primary">Back to Home</a>
+            <a href="/" class="btn btn-primary">
+              Back to Home
+            </a>
           </div>
         </main>
         <Footer />
@@ -34,23 +45,7 @@ category.get("/categories/:slug", (c) => {
     );
   }
 
-  const products = db
-    .query(
-      `SELECT p.*, c.name as category_name
-       FROM products p
-       JOIN categories c ON p.category_id = c.id
-       WHERE p.category_id = ?
-       ORDER BY p.created_at DESC`,
-    )
-    .all(cat.id) as {
-    id: number;
-    name: string;
-    slug: string;
-    price: number;
-    compare_at_price: number | null;
-    image_url: string | null;
-    category_name: string;
-  }[];
+  const products = productService.getByCategory(cat.id);
 
   return c.html(
     <Layout title={cat.name}>
@@ -65,7 +60,9 @@ category.get("/categories/:slug", (c) => {
           <h1 class="section-title" style="text-align: left;">
             {cat.name}
           </h1>
-          {cat.description && <p style="color: var(--color-text-muted); margin-bottom: 2rem;">{cat.description}</p>}
+          {cat.description && (
+            <p style="color: var(--color-text-muted); margin-bottom: 2rem;">{cat.description}</p>
+          )}
           {products.length === 0 ? (
             <p style="color: var(--color-text-muted);">No products in this category yet.</p>
           ) : (

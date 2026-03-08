@@ -3,49 +3,24 @@ import { getDb } from "../db/schema.ts";
 import { Layout } from "../components/Layout.tsx";
 import { Header } from "../components/Header.tsx";
 import { Footer } from "../components/Footer.tsx";
-import { getCartCount } from "../middleware/visitor.ts";
+import { CartService } from "../services/CartService.ts";
+import { SqliteCartRepository } from "../repositories/CartRepository.ts";
+import { SqliteVariantRepository } from "../repositories/VariantRepository.ts";
+import { SqliteProductRepository } from "../repositories/ProductRepository.ts";
 
-type CartItem = {
-  id: number;
-  variant_id: number;
-  quantity: number;
-  size: string;
-  color: string;
-  stock: number;
-  product_name: string;
-  product_slug: string;
-  product_price: number;
-  product_image: string | null;
-};
+const db = getDb();
+const cartService = new CartService(new SqliteCartRepository(db), new SqliteVariantRepository(db));
+const productRepo = new SqliteProductRepository(db);
 
 const cart = new Hono();
 
 cart.get("/cart", (c) => {
-  const db = getDb();
   const visitorId = c.get("visitorId" as never) as string;
-  const cartCount = getCartCount(visitorId);
-
-  const items = db
-    .query(
-      `
-    SELECT ci.id, ci.variant_id, ci.quantity,
-           pv.size, pv.color, pv.stock,
-           p.name as product_name, p.slug as product_slug,
-           p.price as product_price, p.image_url as product_image
-    FROM cart_items ci
-    JOIN product_variants pv ON ci.variant_id = pv.id
-    JOIN products p ON pv.product_id = p.id
-    WHERE ci.session_id = ?
-    ORDER BY ci.added_at DESC
-  `,
-    )
-    .all(visitorId) as CartItem[];
-
-  const subtotal = items.reduce((sum, item) => sum + item.product_price * item.quantity, 0);
+  const { items, subtotal, count } = cartService.getCart(visitorId);
 
   return c.html(
     <Layout title="Cart">
-      <Header cartCount={cartCount} />
+      <Header cartCount={count} />
       <main class="section">
         <div class="container">
           <h1 class="section-title" style="text-align: left;">
@@ -106,7 +81,7 @@ cart.get("/cart", (c) => {
               <div class="cart-summary">
                 <h3>Order Summary</h3>
                 <div class="cart-summary-row">
-                  <span>Subtotal ({cartCount} items)</span>
+                  <span>Subtotal ({count} items)</span>
                   <span>${subtotal.toFixed(2)}</span>
                 </div>
                 <div class="cart-summary-row">
@@ -135,12 +110,11 @@ cart.get("/cart", (c) => {
 
 cart.get("/api/cart/count", (c) => {
   const visitorId = c.get("visitorId" as never) as string;
-  const count = getCartCount(visitorId);
+  const count = cartService.getCount(visitorId);
   return c.json({ count });
 });
 
 cart.post("/cart/add", async (c) => {
-  const db = getDb();
   const visitorId = c.get("visitorId" as never) as string;
   const body = await c.req.parseBody();
 
@@ -149,59 +123,24 @@ cart.post("/cart/add", async (c) => {
   const color = String(body.color);
   const quantity = Math.max(1, Math.min(10, Number(body.quantity) || 1));
 
-  // Find the matching variant
-  const variant = db
-    .query("SELECT id, stock FROM product_variants WHERE product_id = ? AND size = ? AND color = ?")
-    .get(productId, size, color) as { id: number; stock: number } | null;
+  const success = cartService.addToCart(visitorId, productId, size, color, quantity);
+  if (!success) return c.redirect("/");
 
-  if (!variant) {
-    return c.redirect("/");
-  }
-
-  // Upsert: add quantity if already in cart
-  const existing = db
-    .query("SELECT id, quantity FROM cart_items WHERE session_id = ? AND variant_id = ?")
-    .get(visitorId, variant.id) as { id: number; quantity: number } | null;
-
-  if (existing) {
-    const newQty = Math.min(existing.quantity + quantity, variant.stock, 10);
-    db.query("UPDATE cart_items SET quantity = ? WHERE id = ?").run(newQty, existing.id);
-  } else {
-    const qty = Math.min(quantity, variant.stock, 10);
-    db.query("INSERT INTO cart_items (session_id, variant_id, quantity) VALUES (?, ?, ?)").run(
-      visitorId,
-      variant.id,
-      qty,
-    );
-  }
-
-  // Get the product slug for redirect
-  const product = db.query("SELECT slug FROM products WHERE id = ?").get(productId) as { slug: string };
-  return c.redirect(`/products/${product.slug}?added=1`);
+  const product = productRepo.findById(productId);
+  return c.redirect(`/products/${product?.slug}?added=1`);
 });
 
 cart.post("/cart/update", async (c) => {
-  const db = getDb();
   const visitorId = c.get("visitorId" as never) as string;
   const body = await c.req.parseBody();
-
-  const itemId = Number(body.item_id);
-  const quantity = Math.max(1, Math.min(10, Number(body.quantity) || 1));
-
-  db.query("UPDATE cart_items SET quantity = ? WHERE id = ? AND session_id = ?").run(quantity, itemId, visitorId);
-
+  cartService.updateQuantity(visitorId, Number(body.item_id), Number(body.quantity) || 1);
   return c.redirect("/cart");
 });
 
 cart.post("/cart/remove", async (c) => {
-  const db = getDb();
   const visitorId = c.get("visitorId" as never) as string;
   const body = await c.req.parseBody();
-
-  const itemId = Number(body.item_id);
-
-  db.query("DELETE FROM cart_items WHERE id = ? AND session_id = ?").run(itemId, visitorId);
-
+  cartService.removeItem(visitorId, Number(body.item_id));
   return c.redirect("/cart");
 });
 

@@ -3,61 +3,29 @@ import { getDb } from "../db/schema.ts";
 import { Layout } from "../components/Layout.tsx";
 import { Header } from "../components/Header.tsx";
 import { Footer } from "../components/Footer.tsx";
-import { getCartCount } from "../middleware/visitor.ts";
-import { sendOrderConfirmation } from "../lib/email.ts";
+import { OrderService } from "../services/OrderService.ts";
+import { CartService } from "../services/CartService.ts";
+import { SqliteOrderRepository } from "../repositories/OrderRepository.ts";
+import { SqliteCartRepository } from "../repositories/CartRepository.ts";
+import { SqliteVariantRepository } from "../repositories/VariantRepository.ts";
 
-type CartItem = {
-  id: number;
-  variant_id: number;
-  quantity: number;
-  size: string;
-  color: string;
-  product_name: string;
-  product_slug: string;
-  product_price: number;
-  product_image: string | null;
-};
-
-function generateOrderNumber(): string {
-  const prefix = "KOM";
-  const timestamp = Date.now().toString(36).toUpperCase();
-  const random = Math.random().toString(36).substring(2, 6).toUpperCase();
-  return `${prefix}-${timestamp}-${random}`;
-}
+const db = getDb();
+const cartRepo = new SqliteCartRepository(db);
+const cartService = new CartService(cartRepo, new SqliteVariantRepository(db));
+const orderService = new OrderService(new SqliteOrderRepository(db), cartRepo);
 
 const checkout = new Hono();
 
 checkout.get("/checkout", (c) => {
-  const db = getDb();
   const visitorId = c.get("visitorId" as never) as string;
-  const cartCount = getCartCount(visitorId);
+  const { items, subtotal, count } = cartService.getCart(visitorId);
   const error = c.req.query("error");
 
-  const items = db
-    .query(
-      `
-    SELECT ci.id, ci.variant_id, ci.quantity,
-           pv.size, pv.color,
-           p.name as product_name, p.slug as product_slug,
-           p.price as product_price, p.image_url as product_image
-    FROM cart_items ci
-    JOIN product_variants pv ON ci.variant_id = pv.id
-    JOIN products p ON pv.product_id = p.id
-    WHERE ci.session_id = ?
-    ORDER BY ci.added_at DESC
-  `,
-    )
-    .all(visitorId) as CartItem[];
-
-  if (items.length === 0) {
-    return c.redirect("/cart");
-  }
-
-  const subtotal = items.reduce((sum, item) => sum + item.product_price * item.quantity, 0);
+  if (items.length === 0) return c.redirect("/cart");
 
   return c.html(
     <Layout title="Checkout">
-      <Header cartCount={cartCount} />
+      <Header cartCount={count} />
       <main class="section">
         <div class="container">
           <h1 class="section-title" style="text-align: left;">
@@ -157,7 +125,6 @@ checkout.get("/checkout", (c) => {
 });
 
 checkout.post("/checkout", async (c) => {
-  const db = getDb();
   const visitorId = c.get("visitorId" as never) as string;
   const body = await c.req.parseBody();
 
@@ -166,137 +133,42 @@ checkout.post("/checkout", async (c) => {
   const address = (body.address as string)?.trim();
   const city = (body.city as string)?.trim();
   const postalCode = (body.postal_code as string)?.trim();
-  const country = (body.country as string)?.trim() || "";
-  const phone = (body.phone as string)?.trim() || "";
-  const notes = (body.notes as string)?.trim() || "";
 
   if (!email || !name || !address || !city || !postalCode) {
     return c.redirect("/checkout?error=Please fill in all required fields");
   }
 
-  // Get cart items
-  const items = db
-    .query(
-      `
-    SELECT ci.variant_id, ci.quantity,
-           pv.size, pv.color,
-           p.name as product_name, p.slug as product_slug,
-           p.price as product_price
-    FROM cart_items ci
-    JOIN product_variants pv ON ci.variant_id = pv.id
-    JOIN products p ON pv.product_id = p.id
-    WHERE ci.session_id = ?
-  `,
-    )
-    .all(visitorId) as {
-    variant_id: number;
-    quantity: number;
-    size: string;
-    color: string;
-    product_name: string;
-    product_slug: string;
-    product_price: number;
-  }[];
-
-  if (items.length === 0) {
-    return c.redirect("/cart");
-  }
-
-  const subtotal = items.reduce((sum, item) => sum + item.product_price * item.quantity, 0);
-  const orderNumber = generateOrderNumber();
-
-  const insertItem = db.prepare(
-    `INSERT INTO order_items (order_id, product_name, product_slug, variant_size, variant_color, price, quantity, total)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-  );
-  const decrementStock = db.prepare(
-    `UPDATE product_variants SET stock = stock - ? WHERE id = ?`,
-  );
-
-  // Create order, items, and decrement stock atomically
-  const createOrder = db.transaction(() => {
-    const result = db
-      .query(
-        `INSERT INTO orders (order_number, email, name, address, city, postal_code, country, phone, notes, subtotal, total)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      )
-      .run(orderNumber, email, name, address, city, postalCode, country, phone, notes, subtotal, subtotal);
-
-    const orderId = Number(result.lastInsertRowid);
-
-    for (const item of items) {
-      insertItem.run(
-        orderId,
-        item.product_name,
-        item.product_slug,
-        item.size,
-        item.color,
-        item.product_price,
-        item.quantity,
-        item.product_price * item.quantity,
-      );
-      decrementStock.run(item.quantity, item.variant_id);
-    }
-
-    db.query("DELETE FROM cart_items WHERE session_id = ?").run(visitorId);
-
-    return orderId;
+  const orderNumber = orderService.placeOrder(visitorId, {
+    email,
+    name,
+    address,
+    city,
+    postal_code: postalCode,
+    country: (body.country as string)?.trim() || "",
+    phone: (body.phone as string)?.trim() || "",
+    notes: (body.notes as string)?.trim() || "",
   });
 
-  createOrder();
-
-  // Send confirmation email (non-blocking; skipped if RESEND_API_KEY not set)
-  const orderItems = db
-    .query("SELECT oi.* FROM order_items oi JOIN orders o ON oi.order_id = o.id WHERE o.order_number = ?")
-    .all(orderNumber) as {
-    product_name: string;
-    variant_size: string;
-    variant_color: string;
-    quantity: number;
-    price: number;
-    total: number;
-  }[];
-  sendOrderConfirmation(
-    { order_number: orderNumber, email, name, address, city, postal_code: postalCode, country, total: subtotal },
-    orderItems,
-  );
+  if (!orderNumber) return c.redirect("/cart");
 
   return c.redirect(`/order/${orderNumber}`);
 });
 
 checkout.get("/order/:orderNumber", (c) => {
-  const db = getDb();
   const visitorId = c.get("visitorId" as never) as string;
-  const cartCount = getCartCount(visitorId);
+  const count = cartService.getCount(visitorId);
   const orderNumber = c.req.param("orderNumber");
 
-  const order = db.query("SELECT * FROM orders WHERE order_number = ?").get(orderNumber) as {
-    id: number;
-    order_number: string;
-    status: string;
-    email: string;
-    name: string;
-    address: string;
-    city: string;
-    postal_code: string;
-    country: string;
-    phone: string;
-    notes: string;
-    subtotal: number;
-    total: number;
-    created_at: string;
-  } | null;
+  const result = orderService.getOrderByNumber(orderNumber);
 
-  if (!order) {
+  if (!result) {
     return c.html(
       <Layout title="Order Not Found">
-        <Header cartCount={cartCount} />
+        <Header cartCount={count} />
         <main class="section">
           <div class="container" style="text-align: center; padding: 4rem 0;">
             <h1>Order not found</h1>
-            <p style="color: var(--color-text-muted); margin: 1rem 0;">
-              We couldn't find that order.
-            </p>
+            <p style="color: var(--color-text-muted); margin: 1rem 0;">We couldn't find that order.</p>
             <a href="/" class="btn btn-primary">
               Back to Home
             </a>
@@ -308,19 +180,11 @@ checkout.get("/order/:orderNumber", (c) => {
     );
   }
 
-  const items = db.query("SELECT * FROM order_items WHERE order_id = ?").all(order.id) as {
-    product_name: string;
-    product_slug: string;
-    variant_size: string;
-    variant_color: string;
-    price: number;
-    quantity: number;
-    total: number;
-  }[];
+  const { order, items } = result;
 
   return c.html(
     <Layout title={`Order ${order.order_number}`}>
-      <Header cartCount={cartCount} />
+      <Header cartCount={count} />
       <main class="section">
         <div class="container">
           <div class="order-confirmation">

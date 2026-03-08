@@ -3,46 +3,26 @@ import { getDb } from "../db/schema.ts";
 import { Layout } from "../components/Layout.tsx";
 import { Header } from "../components/Header.tsx";
 import { Footer } from "../components/Footer.tsx";
-import { getCartCount } from "../middleware/visitor.ts";
+import { CartService } from "../services/CartService.ts";
+import { ProductService } from "../services/ProductService.ts";
+import { SqliteCartRepository } from "../repositories/CartRepository.ts";
+import { SqliteVariantRepository } from "../repositories/VariantRepository.ts";
+import { SqliteProductRepository } from "../repositories/ProductRepository.ts";
 
-type Product = {
-  id: number;
-  name: string;
-  slug: string;
-  description: string;
-  price: number;
-  compare_at_price: number | null;
-  image_url: string | null;
-  category_name: string;
-  category_slug: string;
-};
-
-type Variant = {
-  id: number;
-  size: string;
-  color: string;
-  stock: number;
-};
+const db = getDb();
+const variantRepo = new SqliteVariantRepository(db);
+const cartService = new CartService(new SqliteCartRepository(db), variantRepo);
+const productService = new ProductService(new SqliteProductRepository(db), variantRepo);
 
 const product = new Hono();
 
 product.get("/products/:slug", (c) => {
-  const db = getDb();
   const slug = c.req.param("slug");
   const visitorId = c.get("visitorId" as never) as string;
-  const cartCount = getCartCount(visitorId);
+  const cartCount = cartService.getCount(visitorId);
   const added = c.req.query("added");
 
-  const p = db
-    .query(
-      `
-    SELECT p.*, c.name as category_name, c.slug as category_slug
-    FROM products p
-    JOIN categories c ON p.category_id = c.id
-    WHERE p.slug = ?
-  `,
-    )
-    .get(slug) as Product | null;
+  const p = productService.getBySlug(slug);
 
   if (!p) {
     return c.html(
@@ -51,7 +31,9 @@ product.get("/products/:slug", (c) => {
         <main class="section">
           <div class="container" style="text-align: center; padding: 4rem 0;">
             <h1>Product not found</h1>
-            <p style="color: var(--color-text-muted); margin: 1rem 0;">The product you're looking for doesn't exist.</p>
+            <p style="color: var(--color-text-muted); margin: 1rem 0;">
+              The product you're looking for doesn't exist.
+            </p>
             <a href="/" class="btn btn-primary">
               Back to Home
             </a>
@@ -63,10 +45,7 @@ product.get("/products/:slug", (c) => {
     );
   }
 
-  const variants = db
-    .query("SELECT id, size, color, stock FROM product_variants WHERE product_id = ? ORDER BY size, color")
-    .all(p.id) as Variant[];
-
+  const variants = productService.getVariants(p.id);
   const sizes = [...new Set(variants.map((v) => v.size))];
   const colors = [...new Set(variants.map((v) => v.color))];
   const onSale = p.compare_at_price != null && p.compare_at_price > p.price;
@@ -146,7 +125,6 @@ product.get("/products/:slug", (c) => {
                   </select>
                 </div>
 
-                {/* Hidden field to pass variants data for stock validation */}
                 <input
                   type="hidden"
                   name="variants"

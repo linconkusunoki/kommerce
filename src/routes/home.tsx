@@ -5,29 +5,26 @@ import { Header } from "../components/Header.tsx";
 import { Footer } from "../components/Footer.tsx";
 import { ProductCard } from "../components/ProductCard.tsx";
 import { CategoryCard } from "../components/CategoryCard.tsx";
-import { getCartCount } from "../middleware/visitor.ts";
+import { CartService } from "../services/CartService.ts";
+import { ProductService } from "../services/ProductService.ts";
+import { CategoryService } from "../services/CategoryService.ts";
+import { SqliteCartRepository } from "../repositories/CartRepository.ts";
+import { SqliteVariantRepository } from "../repositories/VariantRepository.ts";
+import { SqliteProductRepository } from "../repositories/ProductRepository.ts";
+import { SqliteCategoryRepository } from "../repositories/CategoryRepository.ts";
+
+const db = getDb();
+const cartService = new CartService(new SqliteCartRepository(db), new SqliteVariantRepository(db));
+const productService = new ProductService(new SqliteProductRepository(db), new SqliteVariantRepository(db));
+const categoryService = new CategoryService(new SqliteCategoryRepository(db));
 
 const home = new Hono();
 
 home.get("/", (c) => {
-  const db = getDb();
-  const visitorId = c.get("visitorId") as string;
-  const cartCount = getCartCount(visitorId);
-
-  const categories = db.query(
-    "SELECT * FROM categories ORDER BY sort_order"
-  ).all() as { id: number; name: string; slug: string; description: string | null; image_url: string | null }[];
-
-  const featured = db.query(`
-    SELECT p.*, c.name as category_name
-    FROM products p
-    JOIN categories c ON p.category_id = c.id
-    WHERE p.featured = 1
-    ORDER BY p.created_at DESC
-  `).all() as {
-    id: number; name: string; slug: string; price: number;
-    compare_at_price: number | null; image_url: string | null; category_name: string;
-  }[];
+  const visitorId = c.get("visitorId" as never) as string;
+  const cartCount = cartService.getCount(visitorId);
+  const categories = categoryService.getAll();
+  const featured = productService.getFeatured();
 
   return c.html(
     <Layout>
@@ -37,7 +34,9 @@ home.get("/", (c) => {
           <div class="container">
             <h1>Discover Your Style</h1>
             <p>Quality clothing for every occasion, from head to toe.</p>
-            <a href="#categories" class="btn btn-primary btn-lg">Shop Now</a>
+            <a href="#categories" class="btn btn-primary btn-lg">
+              Shop Now
+            </a>
           </div>
         </section>
 
@@ -76,7 +75,7 @@ home.get("/", (c) => {
         </section>
       </main>
       <Footer />
-    </Layout>
+    </Layout>,
   );
 });
 

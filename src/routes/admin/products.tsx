@@ -1,95 +1,18 @@
 import { Hono } from "hono";
 import { getDb } from "../../db/schema.ts";
 import { AdminLayout } from "../../components/AdminLayout.tsx";
+import { ProductService } from "../../services/ProductService.ts";
+import { CategoryService } from "../../services/CategoryService.ts";
+import { SqliteProductRepository } from "../../repositories/ProductRepository.ts";
+import { SqliteVariantRepository } from "../../repositories/VariantRepository.ts";
+import { SqliteCategoryRepository } from "../../repositories/CategoryRepository.ts";
+import { slugify } from "../../lib/utils.ts";
+import type { Variant } from "../../types/index.ts";
 
-const products = new Hono();
-
-function slugify(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
-}
-
-products.get("/", (c) => {
-  const db = getDb();
-  const allProducts = db
-    .query(
-      `
-    SELECT p.*, c.name as category_name,
-           COALESCE(SUM(pv.stock), 0) as total_stock,
-           COUNT(pv.id) as variant_count
-    FROM products p
-    JOIN categories c ON p.category_id = c.id
-    LEFT JOIN product_variants pv ON pv.product_id = p.id
-    GROUP BY p.id
-    ORDER BY p.created_at DESC
-  `,
-    )
-    .all() as {
-    id: number;
-    name: string;
-    slug: string;
-    price: number;
-    featured: number;
-    category_name: string;
-    total_stock: number;
-    variant_count: number;
-  }[];
-
-  return c.html(
-    <AdminLayout title="Products">
-      <div class="admin-toolbar">
-        <a href="/admin/products/new" class="btn btn-primary">
-          Add Product
-        </a>
-      </div>
-      <table class="admin-table">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Category</th>
-            <th>Price</th>
-            <th>Stock</th>
-            <th>Featured</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {allProducts.map((p) => (
-            <tr>
-              <td>{p.name}</td>
-              <td>{p.category_name}</td>
-              <td>${p.price.toFixed(2)}</td>
-              <td style={p.total_stock === 0 ? "color: var(--color-danger, #dc2626); font-weight: 600;" : ""}>
-                {p.total_stock}
-              </td>
-              <td>{p.featured ? "Yes" : "No"}</td>
-              <td class="admin-actions">
-                <a href={`/admin/products/${p.id}/edit`} class="btn btn-sm">
-                  Edit
-                </a>
-                <form method="post" action={`/admin/products/${p.id}/delete`} style="display:inline">
-                  <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete this product?')">
-                    Delete
-                  </button>
-                </form>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </AdminLayout>,
-  );
-});
-
-type Variant = {
-  id: number;
-  size: string;
-  color: string;
-  stock: number;
-  sku: string | null;
-};
+const db = getDb();
+const variantRepo = new SqliteVariantRepository(db);
+const productService = new ProductService(new SqliteProductRepository(db), variantRepo);
+const categoryService = new CategoryService(new SqliteCategoryRepository(db));
 
 function ProductForm({
   product,
@@ -205,8 +128,16 @@ function ProductForm({
                     <td>{v.stock}</td>
                     <td>{v.sku ?? "—"}</td>
                     <td>
-                      <form method="post" action={`/admin/products/${product.id}/variants/${v.id}/delete`} style="display:inline">
-                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete this variant?')">
+                      <form
+                        method="post"
+                        action={`/admin/products/${product.id}/variants/${v.id}/delete`}
+                        style="display:inline"
+                      >
+                        <button
+                          type="submit"
+                          class="btn btn-sm btn-danger"
+                          onclick="return confirm('Delete this variant?')"
+                        >
                           Delete
                         </button>
                       </form>
@@ -220,7 +151,12 @@ function ProductForm({
           )}
 
           <h3 style="margin-bottom: 0.75rem;">Add Variant</h3>
-          <form method="post" action={`/admin/products/${product.id}/variants/add`} class="admin-form" style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end;">
+          <form
+            method="post"
+            action={`/admin/products/${product.id}/variants/add`}
+            class="admin-form"
+            style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end;"
+          >
             <div class="form-group" style="flex: 1; min-width: 120px;">
               <label for="v_size">Size</label>
               <input type="text" id="v_size" name="size" placeholder="M" required />
@@ -238,7 +174,9 @@ function ProductForm({
               <input type="text" id="v_sku" name="sku" placeholder="auto-generated" />
             </div>
             <div class="form-group">
-              <button type="submit" class="btn btn-primary">Add Variant</button>
+              <button type="submit" class="btn btn-primary">
+                Add Variant
+              </button>
             </div>
           </form>
         </div>
@@ -247,107 +185,126 @@ function ProductForm({
   );
 }
 
+const products = new Hono();
+
+products.get("/", (c) => {
+  const allProducts = productService.getAll();
+  return c.html(
+    <AdminLayout title="Products">
+      <div class="admin-toolbar">
+        <a href="/admin/products/new" class="btn btn-primary">
+          Add Product
+        </a>
+      </div>
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Category</th>
+            <th>Price</th>
+            <th>Stock</th>
+            <th>Featured</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {allProducts.map((p) => (
+            <tr>
+              <td>{p.name}</td>
+              <td>{p.category_name}</td>
+              <td>${p.price.toFixed(2)}</td>
+              <td style={p.total_stock === 0 ? "color: var(--color-danger, #dc2626); font-weight: 600;" : ""}>
+                {p.total_stock}
+              </td>
+              <td>{p.featured ? "Yes" : "No"}</td>
+              <td class="admin-actions">
+                <a href={`/admin/products/${p.id}/edit`} class="btn btn-sm">
+                  Edit
+                </a>
+                <form method="post" action={`/admin/products/${p.id}/delete`} style="display:inline">
+                  <button
+                    type="submit"
+                    class="btn btn-sm btn-danger"
+                    onclick="return confirm('Delete this product?')"
+                  >
+                    Delete
+                  </button>
+                </form>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </AdminLayout>,
+  );
+});
+
 products.get("/new", (c) => {
-  const categories = getDb().query("SELECT id, name FROM categories ORDER BY sort_order").all() as {
-    id: number;
-    name: string;
-  }[];
+  const categories = categoryService.getAll();
   return c.html(<ProductForm categories={categories} />);
 });
 
 products.post("/new", async (c) => {
   const body = await c.req.parseBody();
-  const db = getDb();
-  const categories = db.query("SELECT id, name FROM categories ORDER BY sort_order").all() as {
-    id: number;
-    name: string;
-  }[];
-
+  const categories = categoryService.getAll();
   const name = (body["name"] as string).trim();
-  const slug = slugify(name);
 
-  let newId: number;
   try {
-    const result = db.prepare(
-      `
-      INSERT INTO products (name, slug, description, price, compare_at_price, category_id, image_url, featured)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `,
-    ).run(
+    const id = productService.create({
       name,
-      slug,
-      (body["description"] as string) ?? "",
-      parseFloat(body["price"] as string),
-      body["compare_at_price"] ? parseFloat(body["compare_at_price"] as string) : null,
-      parseInt(body["category_id"] as string),
-      (body["image_url"] as string) || null,
-      body["featured"] ? 1 : 0,
-    );
-    newId = Number(result.lastInsertRowid);
+      slug: slugify(name),
+      description: (body["description"] as string) ?? "",
+      price: parseFloat(body["price"] as string),
+      compare_at_price: body["compare_at_price"] ? parseFloat(body["compare_at_price"] as string) : null,
+      category_id: parseInt(body["category_id"] as string),
+      image_url: (body["image_url"] as string) || null,
+      featured: body["featured"] ? 1 : 0,
+    });
+    return c.redirect(`/admin/products/${id}/edit`);
   } catch (e: any) {
     return c.html(<ProductForm categories={categories} error={e.message} />);
   }
-
-  return c.redirect(`/admin/products/${newId}/edit`);
 });
 
 products.get("/:id/edit", (c) => {
-  const db = getDb();
   const id = c.req.param("id");
-  const product = db.query("SELECT * FROM products WHERE id = ?").get(id) as any;
+  const product = productService.getById(id);
   if (!product) return c.notFound();
-  const categories = db.query("SELECT id, name FROM categories ORDER BY sort_order").all() as {
-    id: number;
-    name: string;
-  }[];
-  const variants = db.query("SELECT * FROM product_variants WHERE product_id = ? ORDER BY size, color").all(id) as Variant[];
+  const categories = categoryService.getAll();
+  const variants = productService.getVariants(id);
   return c.html(<ProductForm product={product} categories={categories} variants={variants} />);
 });
 
 products.post("/:id/edit", async (c) => {
   const body = await c.req.parseBody();
-  const db = getDb();
   const id = c.req.param("id");
-  const categories = db.query("SELECT id, name FROM categories ORDER BY sort_order").all() as {
-    id: number;
-    name: string;
-  }[];
-
+  const categories = categoryService.getAll();
   const name = (body["name"] as string).trim();
-  const slug = slugify(name);
 
   try {
-    db.prepare(
-      `
-      UPDATE products SET name = ?, slug = ?, description = ?, price = ?, compare_at_price = ?,
-      category_id = ?, image_url = ?, featured = ? WHERE id = ?
-    `,
-    ).run(
+    productService.update(id, {
       name,
-      slug,
-      (body["description"] as string) ?? "",
-      parseFloat(body["price"] as string),
-      body["compare_at_price"] ? parseFloat(body["compare_at_price"] as string) : null,
-      parseInt(body["category_id"] as string),
-      (body["image_url"] as string) || null,
-      body["featured"] ? 1 : 0,
-      id,
-    );
+      slug: slugify(name),
+      description: (body["description"] as string) ?? "",
+      price: parseFloat(body["price"] as string),
+      compare_at_price: body["compare_at_price"] ? parseFloat(body["compare_at_price"] as string) : null,
+      category_id: parseInt(body["category_id"] as string),
+      image_url: (body["image_url"] as string) || null,
+      featured: body["featured"] ? 1 : 0,
+    });
+    return c.redirect("/admin/products");
   } catch (e: any) {
-    const product = db.query("SELECT * FROM products WHERE id = ?").get(id) as any;
-    const variants = db.query("SELECT * FROM product_variants WHERE product_id = ? ORDER BY size, color").all(id) as Variant[];
-    return c.html(<ProductForm product={product} categories={categories} variants={variants} error={e.message} />);
+    const product = productService.getById(id);
+    const variants = productService.getVariants(id);
+    return c.html(<ProductForm product={product ?? undefined} categories={categories} variants={variants} error={e.message} />);
   }
-
-  return c.redirect("/admin/products");
 });
 
 products.post("/:id/variants/add", async (c) => {
-  const db = getDb();
   const id = c.req.param("id");
   const body = await c.req.parseBody();
 
-  const product = db.query("SELECT slug FROM products WHERE id = ?").get(id) as { slug: string } | null;
+  const product = productService.getById(id);
   if (!product) return c.notFound();
 
   const size = (body["size"] as string).trim();
@@ -355,23 +312,19 @@ products.post("/:id/variants/add", async (c) => {
   const stock = parseInt(body["stock"] as string) || 0;
   const sku = (body["sku"] as string)?.trim() || `${product.slug}-${slugify(size)}-${slugify(color)}`;
 
-  db.prepare(
-    `INSERT INTO product_variants (product_id, size, color, stock, sku) VALUES (?, ?, ?, ?, ?)`,
-  ).run(id, size, color, stock, sku);
-
+  productService.addVariant(id, { size, color, stock, sku });
   return c.redirect(`/admin/products/${id}/edit`);
 });
 
 products.post("/:id/variants/:variantId/delete", (c) => {
-  const db = getDb();
   const id = c.req.param("id");
   const variantId = c.req.param("variantId");
-  db.prepare("DELETE FROM product_variants WHERE id = ? AND product_id = ?").run(variantId, id);
+  productService.deleteVariant(variantId, id);
   return c.redirect(`/admin/products/${id}/edit`);
 });
 
 products.post("/:id/delete", (c) => {
-  getDb().prepare("DELETE FROM products WHERE id = ?").run(c.req.param("id"));
+  productService.delete(c.req.param("id"));
   return c.redirect("/admin/products");
 });
 

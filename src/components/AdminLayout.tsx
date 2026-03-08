@@ -18,7 +18,7 @@ export const AdminLayout: FC<AdminLayoutProps> = ({ title, children }) => {
             <a href="/admin/categories">Categories</a>
           </nav>
           <div class="admin-sidebar-footer">
-            <form method="POST" action="/admin/logout">
+            <form method="post" action="/admin/logout">
               <button type="submit" class="btn btn-outline btn-sm">Logout</button>
             </form>
           </div>

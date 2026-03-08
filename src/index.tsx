@@ -6,6 +6,8 @@ import { requireAuth } from "./middleware/auth.ts";
 import { visitorSession } from "./middleware/visitor.ts";
 import { getDb } from "./db/schema.ts";
 import { AdminLayout } from "./components/AdminLayout.tsx";
+import { DashboardService } from "./services/DashboardService.ts";
+import { SqliteDashboardRepository } from "./repositories/DashboardRepository.ts";
 import home from "./routes/home.tsx";
 import product from "./routes/product.tsx";
 import cart from "./routes/cart.tsx";
@@ -19,6 +21,8 @@ import adminOrders from "./routes/admin/orders.tsx";
 import { logger } from "hono/logger";
 
 const app = new Hono();
+
+const dashboardService = new DashboardService(new SqliteDashboardRepository(getDb()));
 
 // Static files
 app.use("/styles/*", serveStatic({ root: "./src" }));
@@ -56,54 +60,36 @@ const admin = new Hono();
 admin.use("*", requireAuth);
 
 admin.get("/", (c) => {
-  const db = getDb();
-  const productCount = (db.query("SELECT COUNT(*) as count FROM products").get() as { count: number }).count;
-  const categoryCount = (db.query("SELECT COUNT(*) as count FROM categories").get() as { count: number }).count;
-  const orderCount = (db.query("SELECT COUNT(*) as count FROM orders").get() as { count: number }).count;
-  const pendingOrders = (
-    db.query("SELECT COUNT(*) as count FROM orders WHERE status = 'pending'").get() as { count: number }
-  ).count;
-  const totalRevenue = (
-    db.query("SELECT COALESCE(SUM(total), 0) as revenue FROM orders WHERE status != 'cancelled'").get() as { revenue: number }
-  ).revenue;
-  const monthRevenue = (
-    db.query(
-      "SELECT COALESCE(SUM(total), 0) as revenue FROM orders WHERE status != 'cancelled' AND strftime('%Y-%m', created_at) = strftime('%Y-%m', 'now')"
-    ).get() as { revenue: number }
-  ).revenue;
-  const avgOrder = (
-    db.query("SELECT COALESCE(AVG(total), 0) as avg FROM orders WHERE status != 'cancelled'").get() as { avg: number }
-  ).avg;
-
+  const stats = dashboardService.getStats();
   return c.html(
     <AdminLayout title="Dashboard">
       <div class="admin-stats">
         <div class="stat-card">
-          <span class="stat-number">{productCount}</span>
+          <span class="stat-number">{stats.productCount}</span>
           <span class="stat-label">Products</span>
         </div>
         <div class="stat-card">
-          <span class="stat-number">{categoryCount}</span>
+          <span class="stat-number">{stats.categoryCount}</span>
           <span class="stat-label">Categories</span>
         </div>
         <div class="stat-card">
-          <span class="stat-number">{orderCount}</span>
+          <span class="stat-number">{stats.orderCount}</span>
           <span class="stat-label">Orders</span>
         </div>
         <div class="stat-card">
-          <span class="stat-number">{pendingOrders}</span>
+          <span class="stat-number">{stats.pendingOrders}</span>
           <span class="stat-label">Pending Orders</span>
         </div>
         <div class="stat-card">
-          <span class="stat-number">${totalRevenue.toFixed(2)}</span>
+          <span class="stat-number">${stats.totalRevenue.toFixed(2)}</span>
           <span class="stat-label">Total Revenue</span>
         </div>
         <div class="stat-card">
-          <span class="stat-number">${monthRevenue.toFixed(2)}</span>
+          <span class="stat-number">${stats.monthRevenue.toFixed(2)}</span>
           <span class="stat-label">Revenue This Month</span>
         </div>
         <div class="stat-card">
-          <span class="stat-number">${avgOrder.toFixed(2)}</span>
+          <span class="stat-number">${stats.avgOrder.toFixed(2)}</span>
           <span class="stat-label">Avg Order Value</span>
         </div>
       </div>

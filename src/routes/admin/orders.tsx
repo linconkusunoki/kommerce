@@ -1,48 +1,14 @@
 import { Hono } from "hono";
 import { getDb } from "../../db/schema.ts";
 import { AdminLayout } from "../../components/AdminLayout.tsx";
+import { OrderService } from "../../services/OrderService.ts";
+import { SqliteOrderRepository } from "../../repositories/OrderRepository.ts";
+import { SqliteCartRepository } from "../../repositories/CartRepository.ts";
+import { ORDER_STATUSES } from "../../types/index.ts";
+import type { OrderStatus } from "../../types/index.ts";
 
-type Order = {
-  id: number;
-  order_number: string;
-  status: string;
-  email: string;
-  name: string;
-  total: number;
-  created_at: string;
-  item_count: number;
-};
-
-type OrderDetail = {
-  id: number;
-  order_number: string;
-  status: string;
-  email: string;
-  name: string;
-  address: string;
-  city: string;
-  postal_code: string;
-  country: string;
-  phone: string;
-  notes: string;
-  subtotal: number;
-  total: number;
-  created_at: string;
-  updated_at: string;
-};
-
-type OrderItem = {
-  id: number;
-  product_name: string;
-  product_slug: string;
-  variant_size: string;
-  variant_color: string;
-  price: number;
-  quantity: number;
-  total: number;
-};
-
-const STATUS_OPTIONS = ["pending", "confirmed", "processing", "shipped", "delivered", "cancelled"] as const;
+const db = getDb();
+const orderService = new OrderService(new SqliteOrderRepository(db), new SqliteCartRepository(db));
 
 const STATUS_COLORS: Record<string, string> = {
   pending: "#f59e0b",
@@ -56,10 +22,7 @@ const STATUS_COLORS: Record<string, string> = {
 function StatusBadge({ status }: { status: string }) {
   const color = STATUS_COLORS[status] || "#6b7280";
   return (
-    <span
-      class="status-badge"
-      style={`background: ${color}15; color: ${color}; border: 1px solid ${color}30;`}
-    >
+    <span class="status-badge" style={`background: ${color}15; color: ${color}; border: 1px solid ${color}30;`}>
       {status.charAt(0).toUpperCase() + status.slice(1)}
     </span>
   );
@@ -79,30 +42,8 @@ function formatDate(dateStr: string): string {
 const orders = new Hono();
 
 orders.get("/", (c) => {
-  const db = getDb();
   const statusFilter = c.req.query("status") || "";
-
-  let query = `
-    SELECT o.*, COUNT(oi.id) as item_count
-    FROM orders o
-    LEFT JOIN order_items oi ON o.id = oi.order_id
-  `;
-  const params: string[] = [];
-
-  if (statusFilter) {
-    query += " WHERE o.status = ?";
-    params.push(statusFilter);
-  }
-
-  query += " GROUP BY o.id ORDER BY o.created_at DESC";
-
-  const allOrders = db.query(query).all(...params) as Order[];
-
-  // Count by status
-  const statusCounts = db
-    .query("SELECT status, COUNT(*) as count FROM orders GROUP BY status")
-    .all() as { status: string; count: number }[];
-
+  const { orders: allOrders, statusCounts } = orderService.listOrders(statusFilter || undefined);
   const totalOrders = statusCounts.reduce((sum, s) => sum + s.count, 0);
 
   return c.html(
@@ -111,7 +52,7 @@ orders.get("/", (c) => {
         <a href="/admin/orders" class={`btn btn-sm ${!statusFilter ? "btn-primary" : "btn-outline"}`}>
           All ({totalOrders})
         </a>
-        {STATUS_OPTIONS.map((s) => {
+        {ORDER_STATUSES.map((s) => {
           const count = statusCounts.find((sc) => sc.status === s)?.count || 0;
           if (count === 0 && s !== "pending") return null;
           return (
@@ -173,13 +114,10 @@ orders.get("/", (c) => {
 });
 
 orders.get("/:id", (c) => {
-  const db = getDb();
-  const id = c.req.param("id");
+  const result = orderService.getOrderById(c.req.param("id"));
+  if (!result) return c.notFound();
 
-  const order = db.query("SELECT * FROM orders WHERE id = ?").get(id) as OrderDetail | null;
-  if (!order) return c.notFound();
-
-  const items = db.query("SELECT * FROM order_items WHERE order_id = ?").all(order.id) as OrderItem[];
+  const { order, items } = result;
 
   return c.html(
     <AdminLayout title={`Order ${order.order_number}`}>
@@ -249,7 +187,7 @@ orders.get("/:id", (c) => {
               <form method="post" action={`/admin/orders/${order.id}/status`}>
                 <div class="form-group" style="margin-bottom: 0.75rem;">
                   <select name="status" class="quantity-select" style="width: 100%;">
-                    {STATUS_OPTIONS.map((s) => (
+                    {ORDER_STATUSES.map((s) => (
                       <option value={s} selected={order.status === s}>
                         {s.charAt(0).toUpperCase() + s.slice(1)}
                       </option>
@@ -324,13 +262,12 @@ orders.get("/:id", (c) => {
 });
 
 orders.post("/:id/status", async (c) => {
-  const db = getDb();
   const id = c.req.param("id");
   const body = await c.req.parseBody();
   const status = body.status as string;
 
-  if (STATUS_OPTIONS.includes(status as (typeof STATUS_OPTIONS)[number])) {
-    db.query("UPDATE orders SET status = ?, updated_at = datetime('now') WHERE id = ?").run(status, id);
+  if (ORDER_STATUSES.includes(status as OrderStatus)) {
+    orderService.updateStatus(id, status as OrderStatus);
   }
 
   return c.redirect(`/admin/orders/${id}`);

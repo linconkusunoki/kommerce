@@ -1,33 +1,22 @@
 import { Hono } from "hono";
-import { getDb } from "../db/schema.ts";
 import { Layout } from "../components/Layout.tsx";
 import { Header } from "../components/Header.tsx";
 import { Footer } from "../components/Footer.tsx";
 import { ProductCard } from "../components/ProductCard.tsx";
 import { CategoryCard } from "../components/CategoryCard.tsx";
-import { CartService } from "../services/CartService.ts";
-import { ProductService } from "../services/ProductService.ts";
-import { CategoryService } from "../services/CategoryService.ts";
-import { SqliteCartRepository } from "../repositories/CartRepository.ts";
-import { SqliteVariantRepository } from "../repositories/VariantRepository.ts";
-import { SqliteProductRepository } from "../repositories/ProductRepository.ts";
-import { SqliteCategoryRepository } from "../repositories/CategoryRepository.ts";
+import { cartService, productService, categoryService } from "../lib/container.ts";
+import type { AppEnv } from "../types/context.ts";
 
-const db = getDb();
-const cartService = new CartService(new SqliteCartRepository(db), new SqliteVariantRepository(db));
-const productService = new ProductService(new SqliteProductRepository(db), new SqliteVariantRepository(db));
-const categoryService = new CategoryService(new SqliteCategoryRepository(db));
-
-const home = new Hono();
+const home = new Hono<AppEnv>();
 
 home.get("/", (c) => {
-  const visitorId = c.get("visitorId" as never) as string;
+  const visitorId = c.get("visitorId");
   const cartCount = cartService.getCount(visitorId);
   const categories = categoryService.getAll();
   const featured = productService.getFeatured();
 
   return c.html(
-    <Layout>
+    <Layout styles={["/styles/pages/hero.css", "/styles/components/product-card.css", "/styles/components/category-card.css"]}>
       <Header cartCount={cartCount} />
       <main>
         <section class="hero">

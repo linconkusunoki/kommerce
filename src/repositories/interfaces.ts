@@ -82,6 +82,7 @@ export interface IAuthRepository {
 export interface IVisitorRepository {
   findSession(sessionId: string): { id: string } | null;
   createSession(): { id: string; expiresAt: string };
+  deleteExpiredSessions(): void;
 }
 
 export interface IDashboardRepository {

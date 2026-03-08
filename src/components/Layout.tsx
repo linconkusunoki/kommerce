@@ -2,9 +2,10 @@ import type { FC, PropsWithChildren } from "hono/jsx";
 
 type LayoutProps = PropsWithChildren<{
   title?: string;
+  styles?: string[];
 }>;
 
-export const Layout: FC<LayoutProps> = ({ title, children }) => {
+export const Layout: FC<LayoutProps> = ({ title, children, styles }) => {
   const pageTitle = title ? `${title} | Kommerce` : "Kommerce - Clothing Store";
 
   return (
@@ -13,7 +14,8 @@ export const Layout: FC<LayoutProps> = ({ title, children }) => {
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>{pageTitle}</title>
-        <link rel="stylesheet" href="/styles/main.css" />
+        <link rel="stylesheet" href="/styles/core.css" />
+        {styles?.map((href) => <link rel="stylesheet" href={href} />)}
       </head>
       <body>
         {children}

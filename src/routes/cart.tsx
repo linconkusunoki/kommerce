@@ -1,25 +1,18 @@
 import { Hono } from "hono";
-import { getDb } from "../db/schema.ts";
 import { Layout } from "../components/Layout.tsx";
 import { Header } from "../components/Header.tsx";
 import { Footer } from "../components/Footer.tsx";
-import { CartService } from "../services/CartService.ts";
-import { SqliteCartRepository } from "../repositories/CartRepository.ts";
-import { SqliteVariantRepository } from "../repositories/VariantRepository.ts";
-import { SqliteProductRepository } from "../repositories/ProductRepository.ts";
+import { cartService, productService } from "../lib/container.ts";
+import type { AppEnv } from "../types/context.ts";
 
-const db = getDb();
-const cartService = new CartService(new SqliteCartRepository(db), new SqliteVariantRepository(db));
-const productRepo = new SqliteProductRepository(db);
-
-const cart = new Hono();
+const cart = new Hono<AppEnv>();
 
 cart.get("/cart", (c) => {
-  const visitorId = c.get("visitorId" as never) as string;
+  const visitorId = c.get("visitorId");
   const { items, subtotal, count } = cartService.getCart(visitorId);
 
   return c.html(
-    <Layout title="Cart">
+    <Layout title="Cart" styles={["/styles/pages/cart.css"]}>
       <Header cartCount={count} />
       <main class="section">
         <div class="container">
@@ -109,13 +102,13 @@ cart.get("/cart", (c) => {
 });
 
 cart.get("/api/cart/count", (c) => {
-  const visitorId = c.get("visitorId" as never) as string;
+  const visitorId = c.get("visitorId");
   const count = cartService.getCount(visitorId);
   return c.json({ count });
 });
 
 cart.post("/cart/add", async (c) => {
-  const visitorId = c.get("visitorId" as never) as string;
+  const visitorId = c.get("visitorId");
   const body = await c.req.parseBody();
 
   const productId = Number(body.product_id);
@@ -126,19 +119,19 @@ cart.post("/cart/add", async (c) => {
   const success = cartService.addToCart(visitorId, productId, size, color, quantity);
   if (!success) return c.redirect("/");
 
-  const product = productRepo.findById(productId);
-  return c.redirect(`/products/${product?.slug}?added=1`);
+  const p = productService.getById(String(productId));
+  return c.redirect(`/products/${p?.slug}?added=1`);
 });
 
 cart.post("/cart/update", async (c) => {
-  const visitorId = c.get("visitorId" as never) as string;
+  const visitorId = c.get("visitorId");
   const body = await c.req.parseBody();
   cartService.updateQuantity(visitorId, Number(body.item_id), Number(body.quantity) || 1);
   return c.redirect("/cart");
 });
 
 cart.post("/cart/remove", async (c) => {
-  const visitorId = c.get("visitorId" as never) as string;
+  const visitorId = c.get("visitorId");
   const body = await c.req.parseBody();
   cartService.removeItem(visitorId, Number(body.item_id));
   return c.redirect("/cart");

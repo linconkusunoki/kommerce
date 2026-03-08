@@ -19,7 +19,7 @@ export type Product = {
   compare_at_price: number | null;
   category_id: number;
   image_url: string | null;
-  featured: number;
+  featured: boolean;
   created_at: string;
 };
 
@@ -121,7 +121,7 @@ export type CreateProductInput = {
   compare_at_price: number | null;
   category_id: number;
   image_url: string | null;
-  featured: number;
+  featured: boolean;
 };
 
 export type UpdateProductInput = CreateProductInput;

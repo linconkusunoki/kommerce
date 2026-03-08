@@ -1,27 +1,15 @@
 import { Hono } from "hono";
-import { getDb } from "../db/schema.ts";
 import { Layout } from "../components/Layout.tsx";
 import { Header } from "../components/Header.tsx";
 import { Footer } from "../components/Footer.tsx";
 import { ProductCard } from "../components/ProductCard.tsx";
-import { CartService } from "../services/CartService.ts";
-import { ProductService } from "../services/ProductService.ts";
-import { CategoryService } from "../services/CategoryService.ts";
-import { SqliteCartRepository } from "../repositories/CartRepository.ts";
-import { SqliteVariantRepository } from "../repositories/VariantRepository.ts";
-import { SqliteProductRepository } from "../repositories/ProductRepository.ts";
-import { SqliteCategoryRepository } from "../repositories/CategoryRepository.ts";
+import { cartService, productService, categoryService } from "../lib/container.ts";
+import type { AppEnv } from "../types/context.ts";
 
-const db = getDb();
-const variantRepo = new SqliteVariantRepository(db);
-const cartService = new CartService(new SqliteCartRepository(db), variantRepo);
-const productService = new ProductService(new SqliteProductRepository(db), variantRepo);
-const categoryService = new CategoryService(new SqliteCategoryRepository(db));
-
-const category = new Hono();
+const category = new Hono<AppEnv>();
 
 category.get("/categories/:slug", (c) => {
-  const visitorId = c.get("visitorId" as never) as string;
+  const visitorId = c.get("visitorId");
   const cartCount = cartService.getCount(visitorId);
   const slug = c.req.param("slug");
 
@@ -29,7 +17,7 @@ category.get("/categories/:slug", (c) => {
 
   if (!cat) {
     return c.html(
-      <Layout title="Category Not Found">
+      <Layout title="Category Not Found" styles={["/styles/components/product-card.css"]}>
         <Header cartCount={cartCount} />
         <main class="section">
           <div class="container" style="text-align: center; padding: 4rem 0;">
@@ -48,7 +36,7 @@ category.get("/categories/:slug", (c) => {
   const products = productService.getByCategory(cat.id);
 
   return c.html(
-    <Layout title={cat.name}>
+    <Layout title={cat.name} styles={["/styles/components/product-card.css"]}>
       <Header cartCount={cartCount} />
       <main class="section">
         <div class="container">

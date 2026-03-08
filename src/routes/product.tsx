@@ -1,24 +1,15 @@
 import { Hono } from "hono";
-import { getDb } from "../db/schema.ts";
 import { Layout } from "../components/Layout.tsx";
 import { Header } from "../components/Header.tsx";
 import { Footer } from "../components/Footer.tsx";
-import { CartService } from "../services/CartService.ts";
-import { ProductService } from "../services/ProductService.ts";
-import { SqliteCartRepository } from "../repositories/CartRepository.ts";
-import { SqliteVariantRepository } from "../repositories/VariantRepository.ts";
-import { SqliteProductRepository } from "../repositories/ProductRepository.ts";
+import { cartService, productService } from "../lib/container.ts";
+import type { AppEnv } from "../types/context.ts";
 
-const db = getDb();
-const variantRepo = new SqliteVariantRepository(db);
-const cartService = new CartService(new SqliteCartRepository(db), variantRepo);
-const productService = new ProductService(new SqliteProductRepository(db), variantRepo);
-
-const product = new Hono();
+const product = new Hono<AppEnv>();
 
 product.get("/products/:slug", (c) => {
   const slug = c.req.param("slug");
-  const visitorId = c.get("visitorId" as never) as string;
+  const visitorId = c.get("visitorId");
   const cartCount = cartService.getCount(visitorId);
   const added = c.req.query("added");
 
@@ -26,7 +17,7 @@ product.get("/products/:slug", (c) => {
 
   if (!p) {
     return c.html(
-      <Layout title="Not Found">
+      <Layout title="Not Found" styles={["/styles/pages/product-detail.css"]}>
         <Header cartCount={cartCount} />
         <main class="section">
           <div class="container" style="text-align: center; padding: 4rem 0;">
@@ -51,7 +42,7 @@ product.get("/products/:slug", (c) => {
   const onSale = p.compare_at_price != null && p.compare_at_price > p.price;
 
   return c.html(
-    <Layout title={p.name}>
+    <Layout title={p.name} styles={["/styles/pages/product-detail.css"]}>
       <Header cartCount={cartCount} />
       <main>
         <div class="container">

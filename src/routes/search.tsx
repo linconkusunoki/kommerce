@@ -1,24 +1,15 @@
 import { Hono } from "hono";
-import { getDb } from "../db/schema.ts";
 import { Layout } from "../components/Layout.tsx";
 import { Header } from "../components/Header.tsx";
 import { Footer } from "../components/Footer.tsx";
 import { ProductCard } from "../components/ProductCard.tsx";
-import { CartService } from "../services/CartService.ts";
-import { ProductService } from "../services/ProductService.ts";
-import { SqliteCartRepository } from "../repositories/CartRepository.ts";
-import { SqliteVariantRepository } from "../repositories/VariantRepository.ts";
-import { SqliteProductRepository } from "../repositories/ProductRepository.ts";
+import { cartService, productService } from "../lib/container.ts";
+import type { AppEnv } from "../types/context.ts";
 
-const db = getDb();
-const variantRepo = new SqliteVariantRepository(db);
-const cartService = new CartService(new SqliteCartRepository(db), variantRepo);
-const productService = new ProductService(new SqliteProductRepository(db), variantRepo);
-
-const search = new Hono();
+const search = new Hono<AppEnv>();
 
 search.get("/search", (c) => {
-  const visitorId = c.get("visitorId" as never) as string;
+  const visitorId = c.get("visitorId");
   const cartCount = cartService.getCount(visitorId);
   const q = (c.req.query("q") ?? "").trim();
 
@@ -27,7 +18,7 @@ search.get("/search", (c) => {
   const products = productService.search(q);
 
   return c.html(
-    <Layout title={`Search: ${q}`}>
+    <Layout title={`Search: ${q}`} styles={["/styles/pages/search.css", "/styles/components/product-card.css"]}>
       <Header cartCount={cartCount} />
       <main class="section">
         <div class="container">

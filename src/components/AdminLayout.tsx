@@ -5,9 +5,16 @@ type AdminLayoutProps = PropsWithChildren<{
   title?: string;
 }>;
 
+const ADMIN_STYLES = [
+  "/styles/admin/layout.css",
+  "/styles/admin/table.css",
+  "/styles/admin/stats.css",
+  "/styles/admin/orders.css",
+];
+
 export const AdminLayout: FC<AdminLayoutProps> = ({ title, children }) => {
   return (
-    <Layout title={title ? `Admin - ${title}` : "Admin"}>
+    <Layout title={title ? `Admin - ${title}` : "Admin"} styles={ADMIN_STYLES}>
       <div class="admin-wrapper">
         <aside class="admin-sidebar">
           <a href="/admin" class="admin-logo">Kommerce Admin</a>

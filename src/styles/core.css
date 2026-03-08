@@ -1,0 +1,16 @@
+/* === Layer Order === */
+@layer reset, base, layout, components, pages, admin;
+
+/* === Base === */
+@import "./base.css" layer(reset);
+
+/* === Layout === */
+@import "./layout.css" layer(layout);
+
+/* === Core Components (always needed) === */
+@import "./components/header.css" layer(components);
+@import "./components/footer.css" layer(components);
+@import "./components/buttons.css" layer(components);
+@import "./components/forms.css" layer(components);
+@import "./components/alerts.css" layer(components);
+@import "./components/breadcrumb.css" layer(components);

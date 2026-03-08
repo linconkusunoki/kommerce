@@ -8,22 +8,39 @@ import type {
 } from "../types/index.ts";
 import type { IProductRepository } from "./interfaces.ts";
 
+type RawProduct = Omit<Product, "featured"> & { featured: number };
+type RawProductWithCategory = Omit<ProductWithCategory, "featured"> & { featured: number };
+type RawProductWithStock = Omit<ProductWithStock, "featured"> & { featured: number };
+
+function mapProduct(row: RawProduct): Product {
+  return { ...row, featured: !!row.featured };
+}
+
+function mapProductWithCategory(row: RawProductWithCategory): ProductWithCategory {
+  return { ...row, featured: !!row.featured };
+}
+
+function mapProductWithStock(row: RawProductWithStock): ProductWithStock {
+  return { ...row, featured: !!row.featured };
+}
+
 export class SqliteProductRepository implements IProductRepository {
   constructor(private db: Database) {}
 
   findBySlug(slug: string): ProductWithCategory | null {
-    return this.db
+    const row = this.db
       .query(
         `SELECT p.*, c.name as category_name, c.slug as category_slug
          FROM products p
          JOIN categories c ON p.category_id = c.id
          WHERE p.slug = ?`,
       )
-      .get(slug) as ProductWithCategory | null;
+      .get(slug) as RawProductWithCategory | null;
+    return row ? mapProductWithCategory(row) : null;
   }
 
   findFeatured(): ProductWithCategory[] {
-    return this.db
+    const rows = this.db
       .query(
         `SELECT p.*, c.name as category_name, c.slug as category_slug
          FROM products p
@@ -31,11 +48,12 @@ export class SqliteProductRepository implements IProductRepository {
          WHERE p.featured = 1
          ORDER BY p.created_at DESC`,
       )
-      .all() as ProductWithCategory[];
+      .all() as RawProductWithCategory[];
+    return rows.map(mapProductWithCategory);
   }
 
   findByCategory(categoryId: number): ProductWithCategory[] {
-    return this.db
+    const rows = this.db
       .query(
         `SELECT p.*, c.name as category_name, c.slug as category_slug
          FROM products p
@@ -43,12 +61,13 @@ export class SqliteProductRepository implements IProductRepository {
          WHERE p.category_id = ?
          ORDER BY p.created_at DESC`,
       )
-      .all(categoryId) as ProductWithCategory[];
+      .all(categoryId) as RawProductWithCategory[];
+    return rows.map(mapProductWithCategory);
   }
 
   search(query: string): ProductWithCategory[] {
     const like = `%${query}%`;
-    return this.db
+    const rows = this.db
       .query(
         `SELECT p.*, c.name as category_name, c.slug as category_slug
          FROM products p
@@ -56,11 +75,12 @@ export class SqliteProductRepository implements IProductRepository {
          WHERE p.name LIKE ? OR p.description LIKE ?
          ORDER BY p.name`,
       )
-      .all(like, like) as ProductWithCategory[];
+      .all(like, like) as RawProductWithCategory[];
+    return rows.map(mapProductWithCategory);
   }
 
   findAll(): ProductWithStock[] {
-    return this.db
+    const rows = this.db
       .query(
         `SELECT p.*, c.name as category_name,
                 COALESCE(SUM(pv.stock), 0) as total_stock,
@@ -71,11 +91,13 @@ export class SqliteProductRepository implements IProductRepository {
          GROUP BY p.id
          ORDER BY p.created_at DESC`,
       )
-      .all() as ProductWithStock[];
+      .all() as RawProductWithStock[];
+    return rows.map(mapProductWithStock);
   }
 
   findById(id: number | string): Product | null {
-    return this.db.query("SELECT * FROM products WHERE id = ?").get(id) as Product | null;
+    const row = this.db.query("SELECT * FROM products WHERE id = ?").get(id) as RawProduct | null;
+    return row ? mapProduct(row) : null;
   }
 
   create(data: CreateProductInput): number {
@@ -92,7 +114,7 @@ export class SqliteProductRepository implements IProductRepository {
         data.compare_at_price,
         data.category_id,
         data.image_url,
-        data.featured,
+        data.featured ? 1 : 0,
       );
     return Number(result.lastInsertRowid);
   }
@@ -111,7 +133,7 @@ export class SqliteProductRepository implements IProductRepository {
         data.compare_at_price,
         data.category_id,
         data.image_url,
-        data.featured,
+        data.featured ? 1 : 0,
         id,
       );
   }

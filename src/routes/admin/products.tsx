@@ -1,18 +1,9 @@
 import { Hono } from "hono";
-import { getDb } from "../../db/schema.ts";
 import { AdminLayout } from "../../components/AdminLayout.tsx";
-import { ProductService } from "../../services/ProductService.ts";
-import { CategoryService } from "../../services/CategoryService.ts";
-import { SqliteProductRepository } from "../../repositories/ProductRepository.ts";
-import { SqliteVariantRepository } from "../../repositories/VariantRepository.ts";
-import { SqliteCategoryRepository } from "../../repositories/CategoryRepository.ts";
+import { productService, categoryService } from "../../lib/container.ts";
 import { slugify } from "../../lib/utils.ts";
 import type { Variant } from "../../types/index.ts";
-
-const db = getDb();
-const variantRepo = new SqliteVariantRepository(db);
-const productService = new ProductService(new SqliteProductRepository(db), variantRepo);
-const categoryService = new CategoryService(new SqliteCategoryRepository(db));
+import type { AppEnv } from "../../types/context.ts";
 
 function ProductForm({
   product,
@@ -29,7 +20,7 @@ function ProductForm({
     compare_at_price: number | null;
     category_id: number;
     image_url: string | null;
-    featured: number;
+    featured: boolean;
   };
   categories: { id: number; name: string }[];
   variants?: Variant[];
@@ -92,7 +83,7 @@ function ProductForm({
         </div>
         <div class="form-group form-check">
           <label>
-            <input type="checkbox" name="featured" value="1" checked={!!product?.featured} />
+            <input type="checkbox" name="featured" value="1" checked={product?.featured} />
             Featured product
           </label>
         </div>
@@ -185,7 +176,7 @@ function ProductForm({
   );
 }
 
-const products = new Hono();
+const products = new Hono<AppEnv>();
 
 products.get("/", (c) => {
   const allProducts = productService.getAll();
@@ -258,7 +249,7 @@ products.post("/new", async (c) => {
       compare_at_price: body["compare_at_price"] ? parseFloat(body["compare_at_price"] as string) : null,
       category_id: parseInt(body["category_id"] as string),
       image_url: (body["image_url"] as string) || null,
-      featured: body["featured"] ? 1 : 0,
+      featured: !!body["featured"],
     });
     return c.redirect(`/admin/products/${id}/edit`);
   } catch (e: any) {
@@ -290,7 +281,7 @@ products.post("/:id/edit", async (c) => {
       compare_at_price: body["compare_at_price"] ? parseFloat(body["compare_at_price"] as string) : null,
       category_id: parseInt(body["category_id"] as string),
       image_url: (body["image_url"] as string) || null,
-      featured: body["featured"] ? 1 : 0,
+      featured: !!body["featured"],
     });
     return c.redirect("/admin/products");
   } catch (e: any) {

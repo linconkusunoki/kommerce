@@ -16,4 +16,8 @@ export class SqliteVisitorRepository implements IVisitorRepository {
     this.db.query("INSERT INTO visitor_sessions (id, expires_at) VALUES (?, ?)").run(id, expiresAt);
     return { id, expiresAt };
   }
+
+  deleteExpiredSessions(): void {
+    this.db.query("DELETE FROM visitor_sessions WHERE expires_at <= datetime('now')").run();
+  }
 }

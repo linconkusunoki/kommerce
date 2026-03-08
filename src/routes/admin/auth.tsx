@@ -1,19 +1,16 @@
 import { Hono } from "hono";
 import { setCookie, getCookie, deleteCookie } from "hono/cookie";
-import { getDb } from "../../db/schema.ts";
 import { Layout } from "../../components/Layout.tsx";
-import { AuthService } from "../../services/AuthService.ts";
-import { SqliteAuthRepository } from "../../repositories/AuthRepository.ts";
+import { authService } from "../../lib/container.ts";
+import type { AppEnv } from "../../types/context.ts";
 
-const authService = new AuthService(new SqliteAuthRepository(getDb()));
-
-const auth = new Hono();
+const auth = new Hono<AppEnv>();
 
 auth.get("/login", (c) => {
   const error = c.req.query("error");
 
   return c.html(
-    <Layout title="Admin Login">
+    <Layout title="Admin Login" styles={["/styles/pages/login.css"]}>
       <div class="login-page">
         <div class="login-card">
           <h1>Admin Login</h1>

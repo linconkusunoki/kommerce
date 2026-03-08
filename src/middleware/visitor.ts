@@ -2,8 +2,9 @@ import { createMiddleware } from "hono/factory";
 import { getCookie, setCookie } from "hono/cookie";
 import { getDb } from "../db/schema.ts";
 import { SqliteVisitorRepository } from "../repositories/VisitorRepository.ts";
+import type { AppEnv } from "../types/context.ts";
 
-export const visitorSession = createMiddleware(async (c, next) => {
+export const visitorSession = createMiddleware<AppEnv>(async (c, next) => {
   const visitorRepo = new SqliteVisitorRepository(getDb());
   let sessionId = getCookie(c, "visitor_id");
 

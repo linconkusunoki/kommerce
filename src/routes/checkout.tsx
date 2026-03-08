@@ -1,30 +1,21 @@
 import { Hono } from "hono";
-import { getDb } from "../db/schema.ts";
 import { Layout } from "../components/Layout.tsx";
 import { Header } from "../components/Header.tsx";
 import { Footer } from "../components/Footer.tsx";
-import { OrderService } from "../services/OrderService.ts";
-import { CartService } from "../services/CartService.ts";
-import { SqliteOrderRepository } from "../repositories/OrderRepository.ts";
-import { SqliteCartRepository } from "../repositories/CartRepository.ts";
-import { SqliteVariantRepository } from "../repositories/VariantRepository.ts";
+import { cartService, orderService } from "../lib/container.ts";
+import type { AppEnv } from "../types/context.ts";
 
-const db = getDb();
-const cartRepo = new SqliteCartRepository(db);
-const cartService = new CartService(cartRepo, new SqliteVariantRepository(db));
-const orderService = new OrderService(new SqliteOrderRepository(db), cartRepo);
-
-const checkout = new Hono();
+const checkout = new Hono<AppEnv>();
 
 checkout.get("/checkout", (c) => {
-  const visitorId = c.get("visitorId" as never) as string;
+  const visitorId = c.get("visitorId");
   const { items, subtotal, count } = cartService.getCart(visitorId);
   const error = c.req.query("error");
 
   if (items.length === 0) return c.redirect("/cart");
 
   return c.html(
-    <Layout title="Checkout">
+    <Layout title="Checkout" styles={["/styles/pages/checkout.css"]}>
       <Header cartCount={count} />
       <main class="section">
         <div class="container">
@@ -125,7 +116,7 @@ checkout.get("/checkout", (c) => {
 });
 
 checkout.post("/checkout", async (c) => {
-  const visitorId = c.get("visitorId" as never) as string;
+  const visitorId = c.get("visitorId");
   const body = await c.req.parseBody();
 
   const email = (body.email as string)?.trim();
@@ -155,7 +146,7 @@ checkout.post("/checkout", async (c) => {
 });
 
 checkout.get("/order/:orderNumber", (c) => {
-  const visitorId = c.get("visitorId" as never) as string;
+  const visitorId = c.get("visitorId");
   const count = cartService.getCount(visitorId);
   const orderNumber = c.req.param("orderNumber");
 
@@ -163,7 +154,7 @@ checkout.get("/order/:orderNumber", (c) => {
 
   if (!result) {
     return c.html(
-      <Layout title="Order Not Found">
+      <Layout title="Order Not Found" styles={["/styles/pages/order.css"]}>
         <Header cartCount={count} />
         <main class="section">
           <div class="container" style="text-align: center; padding: 4rem 0;">
@@ -183,7 +174,7 @@ checkout.get("/order/:orderNumber", (c) => {
   const { order, items } = result;
 
   return c.html(
-    <Layout title={`Order ${order.order_number}`}>
+    <Layout title={`Order ${order.order_number}`} styles={["/styles/pages/order.css"]}>
       <Header cartCount={count} />
       <main class="section">
         <div class="container">

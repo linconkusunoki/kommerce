@@ -1,14 +1,9 @@
 import { Hono } from "hono";
-import { getDb } from "../../db/schema.ts";
 import { AdminLayout } from "../../components/AdminLayout.tsx";
-import { OrderService } from "../../services/OrderService.ts";
-import { SqliteOrderRepository } from "../../repositories/OrderRepository.ts";
-import { SqliteCartRepository } from "../../repositories/CartRepository.ts";
+import { orderService } from "../../lib/container.ts";
 import { ORDER_STATUSES } from "../../types/index.ts";
 import type { OrderStatus } from "../../types/index.ts";
-
-const db = getDb();
-const orderService = new OrderService(new SqliteOrderRepository(db), new SqliteCartRepository(db));
+import type { AppEnv } from "../../types/context.ts";
 
 const STATUS_COLORS: Record<string, string> = {
   pending: "#f59e0b",
@@ -39,7 +34,7 @@ function formatDate(dateStr: string): string {
   });
 }
 
-const orders = new Hono();
+const orders = new Hono<AppEnv>();
 
 orders.get("/", (c) => {
   const statusFilter = c.req.query("status") || "";

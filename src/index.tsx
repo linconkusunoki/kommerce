@@ -1,13 +1,14 @@
 import { Hono } from "hono";
 import { serveStatic } from "hono/bun";
+import { logger } from "hono/logger";
 import { migrate } from "./db/schema.ts";
 import { seed } from "./db/seed.ts";
 import { requireAuth } from "./middleware/auth.ts";
 import { visitorSession } from "./middleware/visitor.ts";
 import { getDb } from "./db/schema.ts";
 import { AdminLayout } from "./components/AdminLayout.tsx";
-import { DashboardService } from "./services/DashboardService.ts";
-import { SqliteDashboardRepository } from "./repositories/DashboardRepository.ts";
+import { dashboardService } from "./lib/container.ts";
+import { SqliteVisitorRepository } from "./repositories/VisitorRepository.ts";
 import home from "./routes/home.tsx";
 import product from "./routes/product.tsx";
 import cart from "./routes/cart.tsx";
@@ -19,11 +20,9 @@ import adminProducts from "./routes/admin/products.tsx";
 import adminCategories from "./routes/admin/categories.tsx";
 import adminOrders from "./routes/admin/orders.tsx";
 import chatRoute from "./routes/chat.ts";
-import { logger } from "hono/logger";
+import type { AppEnv } from "./types/context.ts";
 
-const app = new Hono();
-
-const dashboardService = new DashboardService(new SqliteDashboardRepository(getDb()));
+const app = new Hono<AppEnv>();
 
 // Static files
 app.use("/styles/*", serveStatic({ root: "./src" }));
@@ -60,7 +59,7 @@ app.route("/", search);
 app.route("/admin", auth);
 
 // Protected admin routes
-const admin = new Hono();
+const admin = new Hono<AppEnv>();
 admin.use("*", requireAuth);
 
 admin.get("/", (c) => {
@@ -110,6 +109,9 @@ app.route("/admin", admin);
 // Init database and start
 migrate();
 await seed();
+
+// Clean up expired visitor sessions on startup
+new SqliteVisitorRepository(getDb()).deleteExpiredSessions();
 
 export default {
   port: 3000,

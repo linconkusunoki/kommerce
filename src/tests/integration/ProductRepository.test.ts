@@ -71,7 +71,7 @@ describe("ProductRepository.create", () => {
       compare_at_price: null,
       category_id: categoryId,
       image_url: null,
-      featured: 0,
+      featured: false,
     });
     expect(id).toBeGreaterThan(0);
     expect(repo.findById(id)?.name).toBe("New Shirt");
@@ -89,12 +89,12 @@ describe("ProductRepository.update", () => {
       compare_at_price: 59.99,
       category_id: categoryId,
       image_url: null,
-      featured: 1,
+      featured: true,
     });
     const updated = repo.findById(id);
     expect(updated?.name).toBe("Updated");
     expect(updated?.price).toBe(49.99);
-    expect(updated?.featured).toBe(1);
+    expect(updated?.featured).toBe(true);
   });
 });
 

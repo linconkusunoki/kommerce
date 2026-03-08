@@ -1,11 +1,8 @@
 import { Hono } from "hono";
-import { getDb } from "../../db/schema.ts";
 import { AdminLayout } from "../../components/AdminLayout.tsx";
-import { CategoryService } from "../../services/CategoryService.ts";
-import { SqliteCategoryRepository } from "../../repositories/CategoryRepository.ts";
+import { categoryService } from "../../lib/container.ts";
 import { slugify } from "../../lib/utils.ts";
-
-const categoryService = new CategoryService(new SqliteCategoryRepository(getDb()));
+import type { AppEnv } from "../../types/context.ts";
 
 function CategoryForm({
   category,
@@ -57,7 +54,7 @@ function CategoryForm({
   );
 }
 
-const categories = new Hono();
+const categories = new Hono<AppEnv>();
 
 categories.get("/", (c) => {
   const allCategories = categoryService.getAllWithCount();

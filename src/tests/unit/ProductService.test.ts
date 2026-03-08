@@ -62,7 +62,7 @@ describe("ProductService.create", () => {
       compare_at_price: null,
       category_id: 1,
       image_url: null,
-      featured: 0,
+      featured: false,
     });
     expect(id).toBe(42);
   });

@@ -18,6 +18,7 @@ import auth from "./routes/admin/auth.tsx";
 import adminProducts from "./routes/admin/products.tsx";
 import adminCategories from "./routes/admin/categories.tsx";
 import adminOrders from "./routes/admin/orders.tsx";
+import chatRoute from "./routes/chat.ts";
 import { logger } from "hono/logger";
 
 const app = new Hono();
@@ -43,6 +44,9 @@ app.use("/products/*", async (c, next) => {
 
 // Add logger
 app.use(logger());
+
+// Chat API
+app.route("/", chatRoute);
 
 // Public routes
 app.route("/", home);

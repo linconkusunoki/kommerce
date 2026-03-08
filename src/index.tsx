@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { serveStatic } from "hono/bun";
 import { logger } from "hono/logger";
+import { compress } from "hono/compress";
 import { migrate } from "./db/schema.ts";
 import { seed } from "./db/seed.ts";
 import { requireAuth } from "./middleware/auth.ts";
@@ -24,9 +25,30 @@ import type { AppEnv } from "./types/context.ts";
 
 const app = new Hono<AppEnv>();
 
-// Static files
+// Compression for all responses
+app.use("*", compress());
+
+// Static files with long-term caching
+app.use("/styles/*", async (c, next) => {
+  await next();
+  c.header("Cache-Control", "public, max-age=31536000, immutable");
+});
 app.use("/styles/*", serveStatic({ root: "./src" }));
 app.use("/public/*", serveStatic({ root: "./" }));
+
+// DOCTYPE for all HTML responses
+app.use("*", async (c, next) => {
+  await next();
+  if (c.res.headers.get("Content-Type")?.startsWith("text/html")) {
+    const html = await c.res.text();
+    if (!html.startsWith("<!DOCTYPE")) {
+      c.res = new Response("<!DOCTYPE html>" + html, {
+        status: c.res.status,
+        headers: c.res.headers,
+      });
+    }
+  }
+});
 
 // Visitor session for all public routes
 app.use("*", visitorSession);

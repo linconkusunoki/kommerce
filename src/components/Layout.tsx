@@ -2,17 +2,20 @@ import type { FC, PropsWithChildren } from "hono/jsx";
 
 type LayoutProps = PropsWithChildren<{
   title?: string;
+  description?: string;
   styles?: string[];
 }>;
 
-export const Layout: FC<LayoutProps> = ({ title, children, styles }) => {
+export const Layout: FC<LayoutProps> = ({ title, description, children, styles }) => {
   const pageTitle = title ? `${title} | Kommerce` : "Kommerce - Clothing Store";
+  const pageDescription = description ?? "Shop quality clothing for every occasion at Kommerce. Discover the latest styles in tops, bottoms, outerwear and more.";
 
   return (
     <html lang="en">
       <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="description" content={pageDescription} />
         <title>{pageTitle}</title>
         <link rel="stylesheet" href="/styles/core.css" />
         {styles?.map((href) => <link rel="stylesheet" href={href} />)}

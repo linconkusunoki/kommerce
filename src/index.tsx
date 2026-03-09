@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { csrf } from "hono/csrf";
 import { serveStatic } from "hono/bun";
 import { logger } from "hono/logger";
 import { compress } from "hono/compress";
@@ -24,6 +25,9 @@ import chatRoute from "./routes/chat.ts";
 import type { AppEnv } from "./types/context.ts";
 
 const app = new Hono<AppEnv>();
+
+// CSRF protection for all state-mutating requests
+app.use("*", csrf());
 
 // Compression for all responses
 app.use("*", compress());
@@ -65,6 +69,9 @@ app.use("/products/*", async (c, next) => {
 
 // Add logger
 app.use(logger());
+
+// CSRF token endpoint for JS clients
+app.get("/csrf-token", (c) => c.json({ ok: true }));
 
 // Chat API
 app.route("/", chatRoute);

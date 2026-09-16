@@ -18,9 +18,11 @@ import { createCheckout } from "./routes/checkout.tsx";
 import { createCategory } from "./routes/category.tsx";
 import { createSearch } from "./routes/search.tsx";
 import { createAdminAuth } from "./routes/admin/auth.tsx";
+import { createAccount } from "./routes/account.tsx";
 import { createAdminProducts } from "./routes/admin/products.tsx";
 import { createAdminCategories } from "./routes/admin/categories.tsx";
 import { createAdminOrders } from "./routes/admin/orders.tsx";
+import { createAdminReviews } from "./routes/admin/reviews.tsx";
 import { createChatRoute } from "./routes/chat.ts";
 import { createChat } from "./chatbot.ts";
 import type { AppEnv } from "./types/context.ts";
@@ -61,16 +63,6 @@ app.use("*", async (c, next) => {
 // Visitor session for all public routes
 app.use("*", visitorSession);
 
-// 1-year cache for public GET pages
-app.use("/", async (c, next) => {
-  await next();
-  c.header("Cache-Control", "public, max-age=31536000");
-});
-app.use("/products/*", async (c, next) => {
-  await next();
-  c.header("Cache-Control", "public, max-age=31536000");
-});
-
 // Add logger
 app.use(logger());
 
@@ -87,6 +79,7 @@ app.route("/", createCart(services));
 app.route("/", createCheckout(services));
 app.route("/", createCategory(services));
 app.route("/", createSearch(services));
+app.route("/", createAccount(services));
 
 // Admin auth (no middleware)
 app.route("/admin", createAdminAuth(services));
@@ -136,6 +129,7 @@ admin.get("/", (c) => {
 admin.route("/products", createAdminProducts(services));
 admin.route("/categories", createAdminCategories(services));
 admin.route("/orders", createAdminOrders(services));
+admin.route("/reviews", createAdminReviews(services));
 
 app.route("/admin", admin);
 

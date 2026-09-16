@@ -14,6 +14,7 @@
   }
 
   .footer-brand .logo { color: white; }
+  .footer-brand .logo { text-decoration: none; }
 
   .footer-brand p {
     font-size: 0.9rem;
@@ -38,6 +39,7 @@
     font-size: 0.85rem;
     color: rgba(255, 255, 255, 0.5);
     transition: color 0.15s;
+    text-decoration: none;
   }
 
   .footer-links a:hover { color: white; }

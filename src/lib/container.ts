@@ -12,6 +12,8 @@ import { SqliteCategoryRepository } from "../repositories/CategoryRepository.ts"
 import { SqliteOrderRepository } from "../repositories/OrderRepository.ts";
 import { SqliteDashboardRepository } from "../repositories/DashboardRepository.ts";
 import { SqliteAuthRepository } from "../repositories/AuthRepository.ts";
+import { ReviewService } from "../services/ReviewService.ts";
+import { SqliteReviewRepository } from "../repositories/ReviewRepository.ts";
 
 export type Services = {
   cartService: CartService;
@@ -20,6 +22,7 @@ export type Services = {
   orderService: OrderService;
   dashboardService: DashboardService;
   authService: AuthService;
+  reviewService: ReviewService;
 };
 
 export function createContainer(db: Database): Services {
@@ -33,5 +36,6 @@ export function createContainer(db: Database): Services {
     orderService: new OrderService(new SqliteOrderRepository(db), cartRepo),
     dashboardService: new DashboardService(new SqliteDashboardRepository(db)),
     authService: new AuthService(new SqliteAuthRepository(db)),
+    reviewService: new ReviewService(new SqliteReviewRepository(db)),
   };
 }

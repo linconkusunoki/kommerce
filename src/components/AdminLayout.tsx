@@ -10,6 +10,7 @@ const ADMIN_STYLES = [
   "/styles/admin/table.css",
   "/styles/admin/stats.css",
   "/styles/admin/orders.css",
+  "/styles/admin/reviews.css",
 ];
 
 export const AdminLayout: FC<AdminLayoutProps> = ({ title, children }) => {
@@ -20,8 +21,9 @@ export const AdminLayout: FC<AdminLayoutProps> = ({ title, children }) => {
           <a href="/admin" class="admin-logo">Kommerce Admin</a>
           <nav class="admin-nav">
             <a href="/admin">Dashboard</a>
-            <a href="/admin/orders">Orders</a>
-            <a href="/admin/products">Products</a>
+          <a href="/admin/orders">Orders</a>
+          <a href="/admin/reviews">Reviews</a>
+          <a href="/admin/products">Products</a>
             <a href="/admin/categories">Categories</a>
           </nav>
           <div class="admin-sidebar-footer">

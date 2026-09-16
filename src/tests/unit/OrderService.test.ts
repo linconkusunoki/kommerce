@@ -36,6 +36,7 @@ function mockOrderRepo(overrides: Partial<IOrderRepository> = {}): IOrderReposit
     findByNumber: mock(() => null),
     findById: mock(() => null),
     findAll: mock(() => []),
+    findByCustomerEmail: mock(() => []),
     getStatusCounts: mock(() => []),
     updateStatus: mock(() => {}),
     getItems: mock(() => []),

@@ -18,6 +18,8 @@
     font-size: 1.5rem;
     font-weight: 700;
     letter-spacing: -0.025em;
+    color: var(--color-text);
+    text-decoration: none;
   }
 
   .nav {
@@ -30,6 +32,7 @@
     font-weight: 500;
     color: var(--color-text-muted);
     transition: color 0.15s;
+    text-decoration: none;
   }
 
   .nav a:hover { color: var(--color-text); }
@@ -38,6 +41,8 @@
     position: relative;
     display: flex;
     align-items: center;
+    color: var(--color-text-muted);
+    text-decoration: none;
   }
 
   .cart-badge {

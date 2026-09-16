@@ -36,6 +36,7 @@
     font-size: 0.9rem;
     color: rgba(255, 255, 255, 0.7);
     transition: background 0.15s, color 0.15s;
+    text-decoration: none;
   }
 
   .admin-nav a:hover {

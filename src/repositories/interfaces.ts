@@ -5,8 +5,12 @@ import type {
   Category,
   CategoryWithCount,
   CreateCategoryInput,
+  CreateCustomerReviewInput,
+  CreateAdminReviewInput,
   CreateProductInput,
   CreateVariantInput,
+  Customer,
+  CustomerWithHash,
   DashboardStats,
   Order,
   OrderItem,
@@ -20,6 +24,11 @@ import type {
   UpdateCategoryInput,
   UpdateProductInput,
   Variant,
+  ProductReview,
+  AdminReview,
+  CustomerReview,
+  RatingSummary,
+  ReviewPage,
 } from "../types/index.ts";
 
 export interface ICartRepository {
@@ -51,6 +60,20 @@ export interface IProductRepository {
   delete(id: number | string): void;
 }
 
+export interface IReviewRepository {
+  findByCustomer(customerId: number): CustomerReview[];
+  findAllForAdmin(visibility?: "all" | "visible" | "hidden", productId?: number): AdminReview[];
+  findVisibleByProduct(productId: number, page: number, pageSize: number): ReviewPage;
+  getRatingSummary(productId: number): RatingSummary;
+  findCustomerReview(productId: number, customerId: number): ProductReview | null;
+  createCustomerReview(input: CreateCustomerReviewInput): number;
+  updateCustomerReview(id: number, customerId: number, rating: number, text: string | null): void;
+  deleteCustomerReview(id: number, customerId: number): void;
+  setVisibility(id: number, visible: boolean): void;
+  deleteReview(id: number): void;
+  createAdminReview(input: CreateAdminReviewInput): number;
+}
+
 export interface ICategoryRepository {
   findAll(): Category[];
   findBySlug(slug: string): Category | null;
@@ -66,6 +89,7 @@ export interface IOrderRepository {
   findByNumber(orderNumber: string): Order | null;
   findById(id: number | string): Order | null;
   findAll(statusFilter?: string): OrderSummary[];
+  findByCustomerEmail(email: string): OrderSummary[];
   getStatusCounts(): StatusCount[];
   updateStatus(id: number | string, status: OrderStatus): void;
   getItems(orderId: number): OrderItem[];
@@ -77,6 +101,12 @@ export interface IAuthRepository {
   createSession(userId: number): { sessionId: string; expiresAt: string };
   findSession(sessionId: string): (AdminUser & { expires_at: string }) | null;
   deleteSession(sessionId: string): void;
+  findCustomerByEmail(email: string): CustomerWithHash | null;
+  createCustomer(email: string, passwordHash: string, displayName: string): number;
+  createCustomerSession(customerId: number): { sessionId: string; expiresAt: string };
+  findCustomerSession(sessionId: string): (Customer & { expires_at: string }) | null;
+  updateCustomerDisplayName(customerId: number, displayName: string): void;
+  deleteCustomerSession(sessionId: string): void;
 }
 
 export interface IVisitorRepository {

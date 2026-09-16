@@ -99,6 +99,45 @@ export type OrderItem = {
 
 export type AdminUser = { id: number; username: string };
 export type AdminUserWithHash = AdminUser & { password_hash: string };
+export type Customer = { id: number; email: string; display_name: string };
+export type CustomerWithHash = Customer & { password_hash: string };
+
+export type ProductReview = {
+  id: number;
+  product_id: number;
+  customer_id: number | null;
+  admin_user_id: number | null;
+  author_name: string;
+  is_admin: boolean;
+  rating: number;
+  text: string | null;
+  visible: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AdminReview = ProductReview & {
+  product_name: string;
+  product_slug: string;
+};
+
+export type CustomerReview = ProductReview & {
+  product_name: string;
+  product_slug: string;
+};
+
+export type ReviewPage = {
+  reviews: ProductReview[];
+  page: number;
+  totalPages: number;
+  totalCount: number;
+};
+
+export type RatingSummary = {
+  average: number;
+  total: number;
+  distribution: Record<1 | 2 | 3 | 4 | 5, number>;
+};
 
 export type StatusCount = { status: string; count: number };
 
@@ -152,6 +191,20 @@ export type PlaceOrderInput = {
   country: string;
   phone: string;
   notes: string;
+};
+
+export type CreateCustomerReviewInput = {
+  productId: number;
+  customerId: number;
+  rating: number;
+  text: string | null;
+};
+
+export type CreateAdminReviewInput = {
+  productId: number;
+  adminUserId: number;
+  rating: number;
+  text: string | null;
 };
 
 export type DashboardStats = {

@@ -33,3 +33,55 @@
 }
 
 .login-back:hover { color: var(--color-text); }
+
+.account-card-wide { max-width: 760px; }
+.account-page { min-height: calc(100vh - 64px); background: var(--color-bg); }
+.account-card-dashboard { width: 100%; min-height: calc(100vh - 64px); padding: 3rem clamp(1.5rem, 5vw, 5rem); }
+.account-dashboard { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 4rem; align-items: start; width: 100%; }
+.account-nav { display: flex; flex-direction: column; gap: 0.25rem; border-right: 1px solid var(--color-border); padding-right: 1rem; }
+.account-nav a { color: var(--color-text-muted); font-size: 0.85rem; padding: 0.55rem 0.75rem; text-decoration: none; border-left: 2px solid transparent; }
+.account-nav a:hover, .account-nav a.active { color: var(--color-text); }
+.account-nav a.active { border-left-color: var(--color-accent); background: var(--color-bg); }
+.account-nav-logout { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--color-border); }
+.account-nav-logout button { border: 0; background: none; color: var(--color-text-muted); cursor: pointer; font: inherit; font-size: 0.85rem; padding: 0.55rem 0.75rem; }
+.account-nav-logout button:hover { color: var(--color-danger); }
+.account-dashboard-content { min-width: 0; }
+.profile-header { display: flex; justify-content: space-between; gap: 1rem; align-items: end; margin-bottom: 1.5rem; }
+.profile-header h1 { margin: 0; text-align: left; }
+.profile-eyebrow { color: var(--color-accent); font-size: 0.75rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+.profile-email { color: var(--color-text-muted); font-size: 0.85rem; }
+.profile-section { border-top: 1px solid var(--color-border); padding-top: 1.5rem; }
+.profile-details { border-top: 0; padding-top: 0; }
+.profile-reviews { border-top: 1px solid var(--color-border); margin-top: 2.5rem; padding-top: 1.5rem; }
+.profile-section-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; }
+.profile-section-header h2 { font-size: 1.1rem; }
+.profile-section-header > span { color: var(--color-text-muted); font-size: 0.85rem; }
+.profile-review-list { border-top: 1px solid var(--color-border); }
+.profile-review { border-bottom: 1px solid var(--color-border); padding: 1rem 0; }
+.profile-review-header { display: flex; justify-content: space-between; gap: 1rem; align-items: center; }
+.profile-review-product { font-weight: 600; }
+.review-status { color: var(--color-success); font-size: 0.75rem; }
+.review-status-hidden { color: var(--color-text-muted); }
+.profile-review-rating { color: #d08a24; font-size: 0.9rem; letter-spacing: 0.08em; margin-top: 0.35rem; }
+.profile-review-rating span { color: var(--color-text-muted); font-size: 0.8rem; letter-spacing: 0; }
+.profile-review p { line-height: 1.6; margin-top: 0.4rem; white-space: pre-wrap; }
+.profile-review time { color: var(--color-text-muted); display: block; font-size: 0.75rem; margin-top: 0.45rem; }
+.profile-reviews-empty { color: var(--color-text-muted); font-size: 0.9rem; }
+.account-order-list { border-top: 1px solid var(--color-border); }
+.account-order { display: flex; justify-content: space-between; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid var(--color-border); color: inherit; text-decoration: none; }
+.account-order:hover { color: var(--color-accent); }
+.account-order span { display: block; color: var(--color-text-muted); font-size: 0.8rem; }
+.account-order-meta { text-align: right; }
+.account-order-meta span { text-transform: capitalize; }
+
+@media (max-width: 600px) {
+  .account-card-wide { padding: 1.5rem; }
+  .account-card-dashboard { padding: 2rem 1.25rem; }
+  .account-dashboard { grid-template-columns: 1fr; gap: 1.5rem; }
+  .account-nav { flex-direction: row; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--color-border); padding: 0 0 0.5rem; }
+  .account-nav a { white-space: nowrap; border-left: 0; border-bottom: 2px solid transparent; }
+  .account-nav a.active { border-bottom-color: var(--color-accent); }
+  .account-nav-logout { margin: 0 0 0 auto; padding: 0; border: 0; }
+  .profile-header { align-items: start; flex-direction: column; }
+  .profile-review-header { align-items: start; flex-direction: column; gap: 0.35rem; }
+}

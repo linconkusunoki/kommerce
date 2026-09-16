@@ -91,6 +91,19 @@ export class SqliteOrderRepository implements IOrderRepository {
     return this.db.query(query).all(...params) as OrderSummary[];
   }
 
+  findByCustomerEmail(email: string): OrderSummary[] {
+    return this.db
+      .query(
+        `SELECT o.*, COUNT(oi.id) AS item_count
+         FROM orders o
+         LEFT JOIN order_items oi ON o.id = oi.order_id
+         WHERE LOWER(o.email) = LOWER(?)
+         GROUP BY o.id
+         ORDER BY o.created_at DESC`,
+      )
+      .all(email) as OrderSummary[];
+  }
+
   getStatusCounts(): StatusCount[] {
     return this.db
       .query("SELECT status, COUNT(*) as count FROM orders GROUP BY status")

@@ -4,6 +4,8 @@
   display: block;
 }
 
+.category-card-link:hover { color: inherit; }
+
 .category-card-link:hover .category-card {
   transform: translateY(-2px);
 }

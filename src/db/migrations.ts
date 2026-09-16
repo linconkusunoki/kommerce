@@ -44,6 +44,37 @@ export const MIGRATION_SQL = `
     expires_at TEXT NOT NULL
   );
 
+  CREATE TABLE IF NOT EXISTS customer_users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    display_name TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS customer_sessions (
+    id TEXT PRIMARY KEY,
+    customer_id INTEGER NOT NULL REFERENCES customer_users(id) ON DELETE CASCADE,
+    expires_at TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS product_reviews (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+    customer_id INTEGER REFERENCES customer_users(id) ON DELETE CASCADE,
+    admin_user_id INTEGER REFERENCES admin_users(id) ON DELETE SET NULL,
+    rating INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
+    text TEXT,
+    visible INTEGER NOT NULL DEFAULT 1 CHECK (visible IN (0, 1)),
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    CHECK ((customer_id IS NOT NULL) OR (admin_user_id IS NOT NULL))
+  );
+
+  CREATE UNIQUE INDEX IF NOT EXISTS product_reviews_customer_product
+    ON product_reviews (customer_id, product_id)
+    WHERE customer_id IS NOT NULL;
+
   CREATE TABLE IF NOT EXISTS visitor_sessions (
     id TEXT PRIMARY KEY,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),

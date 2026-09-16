@@ -13,6 +13,7 @@ export const Header: FC<HeaderProps> = ({ cartCount = 0 }) => {
           <a href="/">Home</a>
           <a href="/#categories">Categories</a>
           <a href="/#featured">Featured</a>
+          <a href="/account/profile">Account</a>
           <form method="get" action="/search" class="nav-search">
             <input type="text" name="q" placeholder="Search..." class="nav-search-input" />
             <button type="submit" class="nav-search-btn" aria-label="Search">

@@ -58,6 +58,10 @@ export class OrderService {
     };
   }
 
+  getCustomerOrders(email: string): OrderSummary[] {
+    return this.orderRepo.findByCustomerEmail(email);
+  }
+
   updateStatus(id: number | string, status: OrderStatus): void {
     this.orderRepo.updateStatus(id, status);
   }

@@ -2,14 +2,15 @@ import { Hono } from "hono";
 import { Layout } from "../components/Layout.tsx";
 import { Header } from "../components/Header.tsx";
 import { Footer } from "../components/Footer.tsx";
-import { cartService, orderService } from "../lib/container.ts";
+import type { Services } from "../lib/container.ts";
 import type { AppEnv } from "../types/context.ts";
 
-const checkout = new Hono<AppEnv>();
+export function createCheckout(services: Services) {
+  const checkout = new Hono<AppEnv>();
 
 checkout.get("/checkout", (c) => {
   const visitorId = c.get("visitorId");
-  const { items, subtotal, count } = cartService.getCart(visitorId);
+  const { items, subtotal, count } = services.cartService.getCart(visitorId);
   const error = c.req.query("error");
 
   if (items.length === 0) return c.redirect("/cart");
@@ -129,7 +130,7 @@ checkout.post("/checkout", async (c) => {
     return c.redirect("/checkout?error=Please fill in all required fields");
   }
 
-  const orderNumber = orderService.placeOrder(visitorId, {
+  const orderNumber = services.orderService.placeOrder(visitorId, {
     email,
     name,
     address,
@@ -147,10 +148,10 @@ checkout.post("/checkout", async (c) => {
 
 checkout.get("/order/:orderNumber", (c) => {
   const visitorId = c.get("visitorId");
-  const count = cartService.getCount(visitorId);
+  const count = services.cartService.getCount(visitorId);
   const orderNumber = c.req.param("orderNumber");
 
-  const result = orderService.getOrderByNumber(orderNumber);
+  const result = services.orderService.getOrderByNumber(orderNumber);
 
   if (!result) {
     return c.html(
@@ -232,6 +233,7 @@ checkout.get("/order/:orderNumber", (c) => {
       <Footer />
     </Layout>,
   );
-});
+  });
 
-export default checkout;
+  return checkout;
+}

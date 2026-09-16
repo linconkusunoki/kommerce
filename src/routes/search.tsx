@@ -3,19 +3,20 @@ import { Layout } from "../components/Layout.tsx";
 import { Header } from "../components/Header.tsx";
 import { Footer } from "../components/Footer.tsx";
 import { ProductCard } from "../components/ProductCard.tsx";
-import { cartService, productService } from "../lib/container.ts";
+import type { Services } from "../lib/container.ts";
 import type { AppEnv } from "../types/context.ts";
 
-const search = new Hono<AppEnv>();
+export function createSearch(services: Services) {
+  const search = new Hono<AppEnv>();
 
 search.get("/search", (c) => {
   const visitorId = c.get("visitorId");
-  const cartCount = cartService.getCount(visitorId);
+  const cartCount = services.cartService.getCount(visitorId);
   const q = (c.req.query("q") ?? "").trim();
 
   if (q.length < 2) return c.redirect("/");
 
-  const products = productService.search(q);
+  const products = services.productService.search(q);
 
   return c.html(
     <Layout title={`Search: ${q}`} styles={["/styles/pages/search.css", "/styles/components/product-card.css"]}>
@@ -54,6 +55,7 @@ search.get("/search", (c) => {
       <Footer />
     </Layout>,
   );
-});
+  });
 
-export default search;
+  return search;
+}

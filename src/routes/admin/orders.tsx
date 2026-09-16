@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { AdminLayout } from "../../components/AdminLayout.tsx";
-import { orderService } from "../../lib/container.ts";
+import type { Services } from "../../lib/container.ts";
 import { ORDER_STATUSES } from "../../types/index.ts";
 import type { OrderStatus } from "../../types/index.ts";
 import type { AppEnv } from "../../types/context.ts";
@@ -34,11 +34,12 @@ function formatDate(dateStr: string): string {
   });
 }
 
-const orders = new Hono<AppEnv>();
+export function createAdminOrders(services: Services) {
+  const orders = new Hono<AppEnv>();
 
 orders.get("/", (c) => {
   const statusFilter = c.req.query("status") || "";
-  const { orders: allOrders, statusCounts } = orderService.listOrders(statusFilter || undefined);
+  const { orders: allOrders, statusCounts } = services.orderService.listOrders(statusFilter || undefined);
   const totalOrders = statusCounts.reduce((sum, s) => sum + s.count, 0);
 
   return c.html(
@@ -109,7 +110,7 @@ orders.get("/", (c) => {
 });
 
 orders.get("/:id", (c) => {
-  const result = orderService.getOrderById(c.req.param("id"));
+  const result = services.orderService.getOrderById(c.req.param("id"));
   if (!result) return c.notFound();
 
   const { order, items } = result;
@@ -262,10 +263,11 @@ orders.post("/:id/status", async (c) => {
   const status = body.status as string;
 
   if (ORDER_STATUSES.includes(status as OrderStatus)) {
-    orderService.updateStatus(id, status as OrderStatus);
+    services.orderService.updateStatus(id, status as OrderStatus);
   }
 
   return c.redirect(`/admin/orders/${id}`);
-});
+  });
 
-export default orders;
+  return orders;
+}

@@ -1,4 +1,4 @@
-import { getDb } from "../db/schema.ts";
+import type { Database } from "bun:sqlite";
 import { CartService } from "../services/CartService.ts";
 import { ProductService } from "../services/ProductService.ts";
 import { CategoryService } from "../services/CategoryService.ts";
@@ -13,14 +13,25 @@ import { SqliteOrderRepository } from "../repositories/OrderRepository.ts";
 import { SqliteDashboardRepository } from "../repositories/DashboardRepository.ts";
 import { SqliteAuthRepository } from "../repositories/AuthRepository.ts";
 
-const db = getDb();
+export type Services = {
+  cartService: CartService;
+  productService: ProductService;
+  categoryService: CategoryService;
+  orderService: OrderService;
+  dashboardService: DashboardService;
+  authService: AuthService;
+};
 
-const variantRepo = new SqliteVariantRepository(db);
-const cartRepo = new SqliteCartRepository(db);
+export function createContainer(db: Database): Services {
+  const variantRepo = new SqliteVariantRepository(db);
+  const cartRepo = new SqliteCartRepository(db);
 
-export const cartService = new CartService(cartRepo, variantRepo);
-export const productService = new ProductService(new SqliteProductRepository(db), variantRepo);
-export const categoryService = new CategoryService(new SqliteCategoryRepository(db));
-export const orderService = new OrderService(new SqliteOrderRepository(db), cartRepo);
-export const dashboardService = new DashboardService(new SqliteDashboardRepository(db));
-export const authService = new AuthService(new SqliteAuthRepository(db));
+  return {
+    cartService: new CartService(cartRepo, variantRepo),
+    productService: new ProductService(new SqliteProductRepository(db), variantRepo),
+    categoryService: new CategoryService(new SqliteCategoryRepository(db)),
+    orderService: new OrderService(new SqliteOrderRepository(db), cartRepo),
+    dashboardService: new DashboardService(new SqliteDashboardRepository(db)),
+    authService: new AuthService(new SqliteAuthRepository(db)),
+  };
+}

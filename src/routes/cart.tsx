@@ -2,14 +2,15 @@ import { Hono } from "hono";
 import { Layout } from "../components/Layout.tsx";
 import { Header } from "../components/Header.tsx";
 import { Footer } from "../components/Footer.tsx";
-import { cartService, productService } from "../lib/container.ts";
+import type { Services } from "../lib/container.ts";
 import type { AppEnv } from "../types/context.ts";
 
-const cart = new Hono<AppEnv>();
+export function createCart(services: Services) {
+  const cart = new Hono<AppEnv>();
 
 cart.get("/cart", (c) => {
   const visitorId = c.get("visitorId");
-  const { items, subtotal, count } = cartService.getCart(visitorId);
+  const { items, subtotal, count } = services.cartService.getCart(visitorId);
 
   return c.html(
     <Layout title="Cart" styles={["/styles/pages/cart.css"]}>
@@ -103,7 +104,7 @@ cart.get("/cart", (c) => {
 
 cart.get("/api/cart/count", (c) => {
   const visitorId = c.get("visitorId");
-  const count = cartService.getCount(visitorId);
+  const count = services.cartService.getCount(visitorId);
   return c.json({ count });
 });
 
@@ -116,25 +117,26 @@ cart.post("/cart/add", async (c) => {
   const color = String(body.color);
   const quantity = Math.max(1, Math.min(10, Number(body.quantity) || 1));
 
-  const success = cartService.addToCart(visitorId, productId, size, color, quantity);
+  const success = services.cartService.addToCart(visitorId, productId, size, color, quantity);
   if (!success) return c.redirect("/");
 
-  const p = productService.getById(String(productId));
+  const p = services.productService.getById(String(productId));
   return c.redirect(`/products/${p?.slug}?added=1`);
 });
 
 cart.post("/cart/update", async (c) => {
   const visitorId = c.get("visitorId");
   const body = await c.req.parseBody();
-  cartService.updateQuantity(visitorId, Number(body.item_id), Number(body.quantity) || 1);
+  services.cartService.updateQuantity(visitorId, Number(body.item_id), Number(body.quantity) || 1);
   return c.redirect("/cart");
 });
 
 cart.post("/cart/remove", async (c) => {
   const visitorId = c.get("visitorId");
   const body = await c.req.parseBody();
-  cartService.removeItem(visitorId, Number(body.item_id));
+  services.cartService.removeItem(visitorId, Number(body.item_id));
   return c.redirect("/cart");
-});
+  });
 
-export default cart;
+  return cart;
+}

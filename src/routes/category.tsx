@@ -3,17 +3,18 @@ import { Layout } from "../components/Layout.tsx";
 import { Header } from "../components/Header.tsx";
 import { Footer } from "../components/Footer.tsx";
 import { ProductCard } from "../components/ProductCard.tsx";
-import { cartService, productService, categoryService } from "../lib/container.ts";
+import type { Services } from "../lib/container.ts";
 import type { AppEnv } from "../types/context.ts";
 
-const category = new Hono<AppEnv>();
+export function createCategory(services: Services) {
+  const category = new Hono<AppEnv>();
 
 category.get("/categories/:slug", (c) => {
   const visitorId = c.get("visitorId");
-  const cartCount = cartService.getCount(visitorId);
+  const cartCount = services.cartService.getCount(visitorId);
   const slug = c.req.param("slug");
 
-  const cat = categoryService.getBySlug(slug);
+  const cat = services.categoryService.getBySlug(slug);
 
   if (!cat) {
     return c.html(
@@ -33,7 +34,7 @@ category.get("/categories/:slug", (c) => {
     );
   }
 
-  const products = productService.getByCategory(cat.id);
+  const products = services.productService.getByCategory(cat.id);
 
   return c.html(
     <Layout title={cat.name} styles={["/styles/components/product-card.css"]}>
@@ -72,6 +73,7 @@ category.get("/categories/:slug", (c) => {
       <Footer />
     </Layout>,
   );
-});
+  });
 
-export default category;
+  return category;
+}

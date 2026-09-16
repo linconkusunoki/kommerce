@@ -1,7 +1,8 @@
 import { Hono } from "hono";
-import { chat, type ChatMessage } from "../chatbot.ts";
+import type { Chat, ChatMessage } from "../chatbot.ts";
 
-const chatRoute = new Hono();
+export function createChatRoute(chat: Chat) {
+  const chatRoute = new Hono();
 
 chatRoute.post("/api/chat", async (c) => {
   const body = await c.req.json<{ messages: ChatMessage[] }>();
@@ -17,6 +18,7 @@ chatRoute.post("/api/chat", async (c) => {
     console.error("[chat]", err);
     return c.json({ reply: "Sorry, I'm having trouble right now. Please try again in a moment." });
   }
-});
+  });
 
-export default chatRoute;
+  return chatRoute;
+}

@@ -1,10 +1,11 @@
 import { Hono } from "hono";
 import { setCookie, getCookie, deleteCookie } from "hono/cookie";
 import { Layout } from "../../components/Layout.tsx";
-import { authService } from "../../lib/container.ts";
+import type { Services } from "../../lib/container.ts";
 import type { AppEnv } from "../../types/context.ts";
 
-const auth = new Hono<AppEnv>();
+export function createAdminAuth(services: Services) {
+  const auth = new Hono<AppEnv>();
 
 auth.get("/login", (c) => {
   const error = c.req.query("error");
@@ -42,7 +43,7 @@ auth.post("/login", async (c) => {
   const username = body["username"] as string;
   const password = body["password"] as string;
 
-  const sessionId = await authService.login(username, password);
+  const sessionId = await services.authService.login(username, password);
   if (!sessionId) return c.redirect("/admin/login?error=Invalid+credentials");
 
   setCookie(c, "session_id", sessionId, {
@@ -58,10 +59,11 @@ auth.post("/login", async (c) => {
 auth.post("/logout", (c) => {
   const sessionId = getCookie(c, "session_id");
   if (sessionId) {
-    authService.logout(sessionId);
+    services.authService.logout(sessionId);
     deleteCookie(c, "session_id", { path: "/" });
   }
   return c.redirect("/admin/login");
-});
+  });
 
-export default auth;
+  return auth;
+}

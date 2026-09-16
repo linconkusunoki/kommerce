@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { AdminLayout } from "../../components/AdminLayout.tsx";
-import { categoryService } from "../../lib/container.ts";
+import type { Services } from "../../lib/container.ts";
 import { slugify } from "../../lib/utils.ts";
 import type { AppEnv } from "../../types/context.ts";
 
@@ -54,10 +54,11 @@ function CategoryForm({
   );
 }
 
-const categories = new Hono<AppEnv>();
+export function createAdminCategories(services: Services) {
+  const categories = new Hono<AppEnv>();
 
 categories.get("/", (c) => {
-  const allCategories = categoryService.getAllWithCount();
+  const allCategories = services.categoryService.getAllWithCount();
   return c.html(
     <AdminLayout title="Categories">
       <div class="admin-toolbar">
@@ -111,7 +112,7 @@ categories.post("/new", async (c) => {
   const name = (body["name"] as string).trim();
 
   try {
-    categoryService.create({
+    services.categoryService.create({
       name,
       slug: slugify(name),
       description: (body["description"] as string) || null,
@@ -125,7 +126,7 @@ categories.post("/new", async (c) => {
 });
 
 categories.get("/:id/edit", (c) => {
-  const category = categoryService.getById(c.req.param("id"));
+  const category = services.categoryService.getById(c.req.param("id"));
   if (!category) return c.notFound();
   return c.html(<CategoryForm category={category} />);
 });
@@ -136,7 +137,7 @@ categories.post("/:id/edit", async (c) => {
   const name = (body["name"] as string).trim();
 
   try {
-    categoryService.update(id, {
+    services.categoryService.update(id, {
       name,
       slug: slugify(name),
       description: (body["description"] as string) || null,
@@ -145,14 +146,15 @@ categories.post("/:id/edit", async (c) => {
     });
     return c.redirect("/admin/categories");
   } catch (e: any) {
-    const category = categoryService.getById(id);
+    const category = services.categoryService.getById(id);
     return c.html(<CategoryForm category={category ?? undefined} error={e.message} />);
   }
 });
 
 categories.post("/:id/delete", (c) => {
-  categoryService.delete(c.req.param("id"));
+  services.categoryService.delete(c.req.param("id"));
   return c.redirect("/admin/categories");
-});
+  });
 
-export default categories;
+  return categories;
+}

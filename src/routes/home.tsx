@@ -4,16 +4,17 @@ import { Header } from "../components/Header.tsx";
 import { Footer } from "../components/Footer.tsx";
 import { ProductCard } from "../components/ProductCard.tsx";
 import { CategoryCard } from "../components/CategoryCard.tsx";
-import { cartService, productService, categoryService } from "../lib/container.ts";
+import type { Services } from "../lib/container.ts";
 import type { AppEnv } from "../types/context.ts";
 
-const home = new Hono<AppEnv>();
+export function createHome(services: Services) {
+  const home = new Hono<AppEnv>();
 
 home.get("/", (c) => {
   const visitorId = c.get("visitorId");
-  const cartCount = cartService.getCount(visitorId);
-  const categories = categoryService.getAll();
-  const featured = productService.getFeatured();
+  const cartCount = services.cartService.getCount(visitorId);
+  const categories = services.categoryService.getAll();
+  const featured = services.productService.getFeatured();
 
   return c.html(
     <Layout styles={["/styles/pages/hero.css", "/styles/components/product-card.css", "/styles/components/category-card.css"]}>
@@ -66,6 +67,7 @@ home.get("/", (c) => {
       <Footer />
     </Layout>,
   );
-});
+  });
 
-export default home;
+  return home;
+}

@@ -1,16 +1,5 @@
 import { GoogleGenerativeAI, SchemaType, type FunctionDeclaration } from "@google/generative-ai";
-import { getDb } from "./db/schema.ts";
-import { SqliteProductRepository } from "./repositories/ProductRepository.ts";
-import { SqliteVariantRepository } from "./repositories/VariantRepository.ts";
-import { SqliteCategoryRepository } from "./repositories/CategoryRepository.ts";
-import { ProductService } from "./services/ProductService.ts";
-import { CategoryService } from "./services/CategoryService.ts";
-
-const db = getDb();
-const productService = new ProductService(new SqliteProductRepository(db), new SqliteVariantRepository(db));
-const categoryService = new CategoryService(new SqliteCategoryRepository(db));
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+import type { Services } from "./lib/container.ts";
 
 const TOOL_DECLARATIONS: FunctionDeclaration[] = [
   {
@@ -74,28 +63,32 @@ Help customers find products, check availability, sizes, colors, and answer ques
 Keep responses concise and helpful. When listing products, include name and price.
 If asked about orders or anything outside your tools, politely ask them to contact support.`;
 
-async function executeTool(name: string, args: Record<string, unknown>): Promise<unknown> {
-  switch (name) {
-    case "search_products":
-      return productService.search(args.query as string);
-    case "list_categories":
-      return categoryService.getAllWithCount();
-    case "get_product":
-      return productService.getBySlug(args.slug as string);
-    case "get_featured_products":
-      return productService.getFeatured();
-    case "get_products_by_category":
-      return productService.getByCategory(args.category_id as number);
-    case "get_product_variants":
-      return productService.getVariants(args.product_id as number);
-    default:
-      return { error: "Unknown tool" };
-  }
-}
-
 export type ChatMessage = { role: "user" | "assistant"; content: string };
+export type Chat = (messages: ChatMessage[]) => Promise<string>;
 
-export async function chat(messages: ChatMessage[]): Promise<string> {
+export function createChat(services: Services, apiKey = process.env.GEMINI_API_KEY): Chat {
+  const genAI = new GoogleGenerativeAI(apiKey!);
+
+  async function executeTool(name: string, args: Record<string, unknown>): Promise<unknown> {
+    switch (name) {
+      case "search_products":
+        return services.productService.search(args.query as string);
+      case "list_categories":
+        return services.categoryService.getAllWithCount();
+      case "get_product":
+        return services.productService.getBySlug(args.slug as string);
+      case "get_featured_products":
+        return services.productService.getFeatured();
+      case "get_products_by_category":
+        return services.productService.getByCategory(args.category_id as number);
+      case "get_product_variants":
+        return services.productService.getVariants(args.product_id as number);
+      default:
+        return { error: "Unknown tool" };
+    }
+  }
+
+  return async function chat(messages: ChatMessage[]): Promise<string> {
   const model = genAI.getGenerativeModel({
     model: "gemini-2.5-flash-lite",
     tools: [{ functionDeclarations: TOOL_DECLARATIONS }],
@@ -130,4 +123,5 @@ export async function chat(messages: ChatMessage[]): Promise<string> {
   }
 
   return result.response.text();
+  };
 }

@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { AdminLayout } from "../../components/AdminLayout.tsx";
-import { productService, categoryService } from "../../lib/container.ts";
+import type { Services } from "../../lib/container.ts";
 import { slugify } from "../../lib/utils.ts";
 import type { Variant } from "../../types/index.ts";
 import type { AppEnv } from "../../types/context.ts";
@@ -176,10 +176,11 @@ function ProductForm({
   );
 }
 
-const products = new Hono<AppEnv>();
+export function createAdminProducts(services: Services) {
+  const products = new Hono<AppEnv>();
 
 products.get("/", (c) => {
-  const allProducts = productService.getAll();
+  const allProducts = services.productService.getAll();
   return c.html(
     <AdminLayout title="Products">
       <div class="admin-toolbar">
@@ -231,17 +232,17 @@ products.get("/", (c) => {
 });
 
 products.get("/new", (c) => {
-  const categories = categoryService.getAll();
+  const categories = services.categoryService.getAll();
   return c.html(<ProductForm categories={categories} />);
 });
 
 products.post("/new", async (c) => {
   const body = await c.req.parseBody();
-  const categories = categoryService.getAll();
+  const categories = services.categoryService.getAll();
   const name = (body["name"] as string).trim();
 
   try {
-    const id = productService.create({
+    const id = services.productService.create({
       name,
       slug: slugify(name),
       description: (body["description"] as string) ?? "",
@@ -259,21 +260,21 @@ products.post("/new", async (c) => {
 
 products.get("/:id/edit", (c) => {
   const id = c.req.param("id");
-  const product = productService.getById(id);
+  const product = services.productService.getById(id);
   if (!product) return c.notFound();
-  const categories = categoryService.getAll();
-  const variants = productService.getVariants(id);
+  const categories = services.categoryService.getAll();
+  const variants = services.productService.getVariants(id);
   return c.html(<ProductForm product={product} categories={categories} variants={variants} />);
 });
 
 products.post("/:id/edit", async (c) => {
   const body = await c.req.parseBody();
   const id = c.req.param("id");
-  const categories = categoryService.getAll();
+  const categories = services.categoryService.getAll();
   const name = (body["name"] as string).trim();
 
   try {
-    productService.update(id, {
+    services.productService.update(id, {
       name,
       slug: slugify(name),
       description: (body["description"] as string) ?? "",
@@ -285,8 +286,8 @@ products.post("/:id/edit", async (c) => {
     });
     return c.redirect("/admin/products");
   } catch (e: any) {
-    const product = productService.getById(id);
-    const variants = productService.getVariants(id);
+    const product = services.productService.getById(id);
+    const variants = services.productService.getVariants(id);
     return c.html(<ProductForm product={product ?? undefined} categories={categories} variants={variants} error={e.message} />);
   }
 });
@@ -295,7 +296,7 @@ products.post("/:id/variants/add", async (c) => {
   const id = c.req.param("id");
   const body = await c.req.parseBody();
 
-  const product = productService.getById(id);
+  const product = services.productService.getById(id);
   if (!product) return c.notFound();
 
   const size = (body["size"] as string).trim();
@@ -303,20 +304,21 @@ products.post("/:id/variants/add", async (c) => {
   const stock = parseInt(body["stock"] as string) || 0;
   const sku = (body["sku"] as string)?.trim() || `${product.slug}-${slugify(size)}-${slugify(color)}`;
 
-  productService.addVariant(id, { size, color, stock, sku });
+  services.productService.addVariant(id, { size, color, stock, sku });
   return c.redirect(`/admin/products/${id}/edit`);
 });
 
 products.post("/:id/variants/:variantId/delete", (c) => {
   const id = c.req.param("id");
   const variantId = c.req.param("variantId");
-  productService.deleteVariant(variantId, id);
+  services.productService.deleteVariant(variantId, id);
   return c.redirect(`/admin/products/${id}/edit`);
 });
 
 products.post("/:id/delete", (c) => {
-  productService.delete(c.req.param("id"));
+  services.productService.delete(c.req.param("id"));
   return c.redirect("/admin/products");
-});
+  });
 
-export default products;
+  return products;
+}

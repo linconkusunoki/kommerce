@@ -9,22 +9,26 @@ import { requireAuth } from "./middleware/auth.ts";
 import { visitorSession } from "./middleware/visitor.ts";
 import { getDb } from "./db/schema.ts";
 import { AdminLayout } from "./components/AdminLayout.tsx";
-import { dashboardService } from "./lib/container.ts";
+import { createContainer } from "./lib/container.ts";
 import { SqliteVisitorRepository } from "./repositories/VisitorRepository.ts";
-import home from "./routes/home.tsx";
-import product from "./routes/product.tsx";
-import cart from "./routes/cart.tsx";
-import checkout from "./routes/checkout.tsx";
-import category from "./routes/category.tsx";
-import search from "./routes/search.tsx";
-import auth from "./routes/admin/auth.tsx";
-import adminProducts from "./routes/admin/products.tsx";
-import adminCategories from "./routes/admin/categories.tsx";
-import adminOrders from "./routes/admin/orders.tsx";
-import chatRoute from "./routes/chat.ts";
+import { createHome } from "./routes/home.tsx";
+import { createProduct } from "./routes/product.tsx";
+import { createCart } from "./routes/cart.tsx";
+import { createCheckout } from "./routes/checkout.tsx";
+import { createCategory } from "./routes/category.tsx";
+import { createSearch } from "./routes/search.tsx";
+import { createAdminAuth } from "./routes/admin/auth.tsx";
+import { createAdminProducts } from "./routes/admin/products.tsx";
+import { createAdminCategories } from "./routes/admin/categories.tsx";
+import { createAdminOrders } from "./routes/admin/orders.tsx";
+import { createChatRoute } from "./routes/chat.ts";
+import { createChat } from "./chatbot.ts";
 import type { AppEnv } from "./types/context.ts";
 
 const app = new Hono<AppEnv>();
+const db = getDb();
+const services = createContainer(db);
+const chat = createChat(services);
 
 // CSRF protection for all state-mutating requests
 app.use("*", csrf());
@@ -74,25 +78,25 @@ app.use(logger());
 app.get("/csrf-token", (c) => c.json({ ok: true }));
 
 // Chat API
-app.route("/", chatRoute);
+app.route("/", createChatRoute(chat));
 
 // Public routes
-app.route("/", home);
-app.route("/", product);
-app.route("/", cart);
-app.route("/", checkout);
-app.route("/", category);
-app.route("/", search);
+app.route("/", createHome(services));
+app.route("/", createProduct(services));
+app.route("/", createCart(services));
+app.route("/", createCheckout(services));
+app.route("/", createCategory(services));
+app.route("/", createSearch(services));
 
 // Admin auth (no middleware)
-app.route("/admin", auth);
+app.route("/admin", createAdminAuth(services));
 
 // Protected admin routes
 const admin = new Hono<AppEnv>();
 admin.use("*", requireAuth);
 
 admin.get("/", (c) => {
-  const stats = dashboardService.getStats();
+  const stats = services.dashboardService.getStats();
   return c.html(
     <AdminLayout title="Dashboard">
       <div class="admin-stats">
@@ -129,9 +133,9 @@ admin.get("/", (c) => {
   );
 });
 
-admin.route("/products", adminProducts);
-admin.route("/categories", adminCategories);
-admin.route("/orders", adminOrders);
+admin.route("/products", createAdminProducts(services));
+admin.route("/categories", createAdminCategories(services));
+admin.route("/orders", createAdminOrders(services));
 
 app.route("/admin", admin);
 

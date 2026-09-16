@@ -2,18 +2,19 @@ import { Hono } from "hono";
 import { Layout } from "../components/Layout.tsx";
 import { Header } from "../components/Header.tsx";
 import { Footer } from "../components/Footer.tsx";
-import { cartService, productService } from "../lib/container.ts";
+import type { Services } from "../lib/container.ts";
 import type { AppEnv } from "../types/context.ts";
 
-const product = new Hono<AppEnv>();
+export function createProduct(services: Services) {
+  const product = new Hono<AppEnv>();
 
 product.get("/products/:slug", (c) => {
   const slug = c.req.param("slug");
   const visitorId = c.get("visitorId");
-  const cartCount = cartService.getCount(visitorId);
+  const cartCount = services.cartService.getCount(visitorId);
   const added = c.req.query("added");
 
-  const p = productService.getBySlug(slug);
+  const p = services.productService.getBySlug(slug);
 
   if (!p) {
     return c.html(
@@ -36,7 +37,7 @@ product.get("/products/:slug", (c) => {
     );
   }
 
-  const variants = productService.getVariants(p.id);
+  const variants = services.productService.getVariants(p.id);
   const sizes = [...new Set(variants.map((v) => v.size))];
   const colors = [...new Set(variants.map((v) => v.color))];
   const onSale = p.compare_at_price != null && p.compare_at_price > p.price;
@@ -135,6 +136,7 @@ product.get("/products/:slug", (c) => {
       <Footer />
     </Layout>,
   );
-});
+  });
 
-export default product;
+  return product;
+}

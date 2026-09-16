@@ -2,30 +2,10 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { getDb } from "./db/schema.ts";
-import { SqliteProductRepository } from "./repositories/ProductRepository.ts";
-import { SqliteVariantRepository } from "./repositories/VariantRepository.ts";
-import { SqliteOrderRepository } from "./repositories/OrderRepository.ts";
-import { SqliteCategoryRepository } from "./repositories/CategoryRepository.ts";
-import { SqliteDashboardRepository } from "./repositories/DashboardRepository.ts";
-import { ProductService } from "./services/ProductService.ts";
-import { OrderService } from "./services/OrderService.ts";
-import { CategoryService } from "./services/CategoryService.ts";
-import { DashboardService } from "./services/DashboardService.ts";
-import { SqliteCartRepository } from "./repositories/CartRepository.ts";
+import { createContainer } from "./lib/container.ts";
 import { ORDER_STATUSES } from "./types/index.ts";
 
-const db = getDb();
-
-const productService = new ProductService(
-  new SqliteProductRepository(db),
-  new SqliteVariantRepository(db),
-);
-const orderService = new OrderService(
-  new SqliteOrderRepository(db),
-  new SqliteCartRepository(db),
-);
-const categoryService = new CategoryService(new SqliteCategoryRepository(db));
-const dashboardService = new DashboardService(new SqliteDashboardRepository(db));
+const services = createContainer(getDb());
 
 const server = new McpServer({
   name: "kommerce",
@@ -39,7 +19,7 @@ server.tool(
   "Search products by name or description",
   { query: z.string().describe("Search term") },
   async ({ query }) => {
-    const results = productService.search(query);
+    const results = services.productService.search(query);
     return {
       content: [{ type: "text", text: JSON.stringify(results, null, 2) }],
     };
@@ -51,7 +31,7 @@ server.tool(
   "List all products with stock information",
   {},
   async () => {
-    const products = productService.getAll();
+    const products = services.productService.getAll();
     return {
       content: [{ type: "text", text: JSON.stringify(products, null, 2) }],
     };
@@ -69,7 +49,7 @@ server.tool(
     if (!id && !slug) {
       return { content: [{ type: "text", text: "Provide either id or slug" }], isError: true };
     }
-    const product = slug ? productService.getBySlug(slug) : productService.getById(id!);
+    const product = slug ? services.productService.getBySlug(slug) : services.productService.getById(id!);
     if (!product) {
       return { content: [{ type: "text", text: "Product not found" }], isError: true };
     }
@@ -84,7 +64,7 @@ server.tool(
   "Get all variants (size/color/stock) for a product",
   { product_id: z.union([z.number(), z.string()]).describe("Product ID") },
   async ({ product_id }) => {
-    const variants = productService.getVariants(product_id);
+    const variants = services.productService.getVariants(product_id);
     return {
       content: [{ type: "text", text: JSON.stringify(variants, null, 2) }],
     };
@@ -96,7 +76,7 @@ server.tool(
   "Get featured/highlighted products",
   {},
   async () => {
-    const products = productService.getFeatured();
+    const products = services.productService.getFeatured();
     return {
       content: [{ type: "text", text: JSON.stringify(products, null, 2) }],
     };
@@ -110,7 +90,7 @@ server.tool(
   "List all product categories with product counts",
   {},
   async () => {
-    const categories = categoryService.getAllWithCount();
+    const categories = services.categoryService.getAllWithCount();
     return {
       content: [{ type: "text", text: JSON.stringify(categories, null, 2) }],
     };
@@ -122,7 +102,7 @@ server.tool(
   "Get all products in a specific category",
   { category_id: z.number().describe("Category ID") },
   async ({ category_id }) => {
-    const products = productService.getByCategory(category_id);
+    const products = services.productService.getByCategory(category_id);
     return {
       content: [{ type: "text", text: JSON.stringify(products, null, 2) }],
     };
@@ -141,7 +121,7 @@ server.tool(
       .describe("Filter by order status"),
   },
   async ({ status }) => {
-    const result = orderService.listOrders(status);
+    const result = services.orderService.listOrders(status);
     return {
       content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
     };
@@ -160,8 +140,8 @@ server.tool(
       return { content: [{ type: "text", text: "Provide either order_number or id" }], isError: true };
     }
     const result = order_number
-      ? orderService.getOrderByNumber(order_number)
-      : orderService.getOrderById(id!);
+      ? services.orderService.getOrderByNumber(order_number)
+      : services.orderService.getOrderById(id!);
     if (!result) {
       return { content: [{ type: "text", text: "Order not found" }], isError: true };
     }
@@ -179,7 +159,7 @@ server.tool(
     status: z.enum(ORDER_STATUSES).describe("New status"),
   },
   async ({ id, status }) => {
-    orderService.updateStatus(id, status);
+    services.orderService.updateStatus(id, status);
     return {
       content: [{ type: "text", text: `Order ${id} updated to "${status}"` }],
     };
@@ -193,7 +173,7 @@ server.tool(
   "Get store statistics: revenue, order counts, product counts",
   {},
   async () => {
-    const stats = dashboardService.getStats();
+    const stats = services.dashboardService.getStats();
     return {
       content: [{ type: "text", text: JSON.stringify(stats, null, 2) }],
     };

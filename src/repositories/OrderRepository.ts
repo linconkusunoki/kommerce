@@ -13,7 +13,7 @@ import type { IOrderRepository } from "./interfaces.ts";
 export class SqliteOrderRepository implements IOrderRepository {
   constructor(private db: Database) {}
 
-  create(input: PlaceOrderInput, items: CartItem[], orderNumber: string, sessionId: string): void {
+  create(input: PlaceOrderInput, items: CartItem[], orderNumber: string, sessionId: string, customerId?: number): void {
     const subtotal = items.reduce((sum, item) => sum + item.product_price * item.quantity, 0);
 
     const insertItem = this.db.prepare(
@@ -27,11 +27,12 @@ export class SqliteOrderRepository implements IOrderRepository {
     const run = this.db.transaction(() => {
       const result = this.db
         .query(
-          `INSERT INTO orders (order_number, email, name, address, city, postal_code, country, phone, notes, subtotal, total)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          `INSERT INTO orders (order_number, customer_id, email, name, address, city, postal_code, country, phone, notes, subtotal, total)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         )
         .run(
           orderNumber,
+          customerId ?? null,
           input.email,
           input.name,
           input.address,
@@ -91,17 +92,17 @@ export class SqliteOrderRepository implements IOrderRepository {
     return this.db.query(query).all(...params) as OrderSummary[];
   }
 
-  findByCustomerEmail(email: string): OrderSummary[] {
+  findByCustomer(customerId: number, email: string): OrderSummary[] {
     return this.db
       .query(
         `SELECT o.*, COUNT(oi.id) AS item_count
          FROM orders o
          LEFT JOIN order_items oi ON o.id = oi.order_id
-         WHERE LOWER(o.email) = LOWER(?)
+          WHERE o.customer_id = ? OR (o.customer_id IS NULL AND LOWER(o.email) = LOWER(?))
          GROUP BY o.id
          ORDER BY o.created_at DESC`,
       )
-      .all(email) as OrderSummary[];
+      .all(customerId, email) as OrderSummary[];
   }
 
   getStatusCounts(): StatusCount[] {

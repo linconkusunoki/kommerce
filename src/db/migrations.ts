@@ -93,6 +93,7 @@ export const MIGRATION_SQL = `
   CREATE TABLE IF NOT EXISTS orders (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     order_number TEXT NOT NULL UNIQUE,
+    customer_id INTEGER REFERENCES customer_users(id) ON DELETE SET NULL,
     status TEXT NOT NULL DEFAULT 'pending',
     email TEXT NOT NULL,
     name TEXT NOT NULL,

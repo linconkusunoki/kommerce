@@ -59,6 +59,7 @@ export type CartItem = {
 export type Order = {
   id: number;
   order_number: string;
+  customer_id: number | null;
   status: string;
   email: string;
   name: string;
@@ -77,6 +78,7 @@ export type Order = {
 export type OrderSummary = {
   id: number;
   order_number: string;
+  customer_id: number | null;
   status: string;
   email: string;
   name: string;

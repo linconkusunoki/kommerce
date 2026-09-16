@@ -10,12 +10,12 @@ export class OrderService {
   ) {}
 
   // Returns the order number on success, null if cart is empty
-  placeOrder(sessionId: string, input: PlaceOrderInput): string | null {
+  placeOrder(sessionId: string, input: PlaceOrderInput, customerId?: number): string | null {
     const items = this.cartRepo.getItems(sessionId);
     if (items.length === 0) return null;
 
     const orderNumber = generateOrderNumber();
-    this.orderRepo.create(input, items, orderNumber, sessionId);
+    this.orderRepo.create(input, items, orderNumber, sessionId, customerId);
 
     // Send confirmation email (non-blocking)
     const orderItems = this.orderRepo.getItemsByOrderNumber(orderNumber);
@@ -58,8 +58,8 @@ export class OrderService {
     };
   }
 
-  getCustomerOrders(email: string): OrderSummary[] {
-    return this.orderRepo.findByCustomerEmail(email);
+  getCustomerOrders(customerId: number, email: string): OrderSummary[] {
+    return this.orderRepo.findByCustomer(customerId, email);
   }
 
   updateStatus(id: number | string, status: OrderStatus): void {

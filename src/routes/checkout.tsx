@@ -4,12 +4,14 @@ import { Header } from "../components/Header.tsx";
 import { Footer } from "../components/Footer.tsx";
 import type { Services } from "../lib/container.ts";
 import type { AppEnv } from "../types/context.ts";
+import { getAuthenticatedCustomer } from "../middleware/customerAuth.ts";
 
 export function createCheckout(services: Services) {
   const checkout = new Hono<AppEnv>();
 
 checkout.get("/checkout", (c) => {
   const visitorId = c.get("visitorId");
+  const customer = getAuthenticatedCustomer(c);
   const { items, subtotal, count } = services.cartService.getCart(visitorId);
   const error = c.req.query("error");
 
@@ -31,7 +33,15 @@ checkout.get("/checkout", (c) => {
               <h2 class="checkout-section-title">Contact Information</h2>
               <div class="form-group">
                 <label for="email">Email</label>
-                <input type="email" id="email" name="email" required placeholder="your@email.com" />
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value={customer?.email ?? ""}
+                  required
+                  placeholder="your@email.com"
+                  readonly={Boolean(customer)}
+                />
               </div>
               <div class="form-group">
                 <label for="phone">Phone (optional)</label>
@@ -118,9 +128,10 @@ checkout.get("/checkout", (c) => {
 
 checkout.post("/checkout", async (c) => {
   const visitorId = c.get("visitorId");
+  const customer = getAuthenticatedCustomer(c);
   const body = await c.req.parseBody();
 
-  const email = (body.email as string)?.trim();
+  const email = customer?.email ?? (body.email as string)?.trim();
   const name = (body.name as string)?.trim();
   const address = (body.address as string)?.trim();
   const city = (body.city as string)?.trim();
@@ -139,7 +150,7 @@ checkout.post("/checkout", async (c) => {
     country: (body.country as string)?.trim() || "",
     phone: (body.phone as string)?.trim() || "",
     notes: (body.notes as string)?.trim() || "",
-  });
+  }, customer?.id);
 
   if (!orderNumber) return c.redirect("/cart");
 

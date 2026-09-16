@@ -16,5 +16,10 @@ export function getDb(): Database {
 }
 
 export function migrate() {
-  getDb().exec(MIGRATION_SQL);
+  const db = getDb();
+  db.exec(MIGRATION_SQL);
+  const columns = db.query("PRAGMA table_info(orders)").all() as { name: string }[];
+  if (!columns.some((column) => column.name === "customer_id")) {
+    db.exec("ALTER TABLE orders ADD COLUMN customer_id INTEGER REFERENCES customer_users(id) ON DELETE SET NULL");
+  }
 }

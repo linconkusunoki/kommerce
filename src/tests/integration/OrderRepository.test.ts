@@ -108,6 +108,18 @@ describe("OrderRepository.findByNumber", () => {
   });
 });
 
+describe("OrderRepository.findByCustomer", () => {
+  test("returns an order for its customer even when checkout email differs", () => {
+    db.exec("INSERT INTO customer_users (email, password_hash, display_name) VALUES ('account@example.com', 'hash', 'Customer')");
+    const customerId = Number(db.query("SELECT last_insert_rowid() AS id").get() as { id: number });
+    repo.create({ ...validInput, email: "checkout@example.com" }, [makeCartItem()], "KOM-CUSTOMER-1", sessionId, customerId);
+
+    const orders = repo.findByCustomer(customerId, "account@example.com");
+
+    expect(orders.map((order) => order.order_number)).toContain("KOM-CUSTOMER-1");
+  });
+});
+
 describe("OrderRepository.findAll", () => {
   test("returns all orders when no filter", () => {
     repo.create(validInput, [makeCartItem()], "KOM-1", sessionId);

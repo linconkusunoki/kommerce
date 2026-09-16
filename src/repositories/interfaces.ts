@@ -85,11 +85,11 @@ export interface ICategoryRepository {
 }
 
 export interface IOrderRepository {
-  create(input: PlaceOrderInput, items: CartItem[], orderNumber: string, sessionId: string): void;
+  create(input: PlaceOrderInput, items: CartItem[], orderNumber: string, sessionId: string, customerId?: number): void;
   findByNumber(orderNumber: string): Order | null;
   findById(id: number | string): Order | null;
   findAll(statusFilter?: string): OrderSummary[];
-  findByCustomerEmail(email: string): OrderSummary[];
+  findByCustomer(customerId: number, email: string): OrderSummary[];
   getStatusCounts(): StatusCount[];
   updateStatus(id: number | string, status: OrderStatus): void;
   getItems(orderId: number): OrderItem[];

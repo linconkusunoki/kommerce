@@ -160,7 +160,7 @@ export function createAccount(services: Services) {
   account.get("/account/orders", requireCustomerAuth, (c) => {
     c.header("Cache-Control", "private, no-store");
     const customer = c.get("customer");
-    const orders = services.orderService.getCustomerOrders(customer.email);
+    const orders = services.orderService.getCustomerOrders(customer.id, customer.email);
     return c.html(accountPage("Your Orders", <AccountDashboard active="orders">
       <section class="profile-section profile-details" aria-labelledby="orders-heading">
         <div class="profile-header">

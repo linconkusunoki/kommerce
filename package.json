@@ -5,6 +5,8 @@
   "private": true,
   "scripts": {
     "dev": "bun run src/index.tsx",
+    "validate-env": "bun run scripts/validate-env.ts",
+    "build": "bun run validate-env && bun build src/index.tsx --outdir dist",
     "test": "bun test src/tests",
     "mcp": "bun run src/mcp.ts"
   },

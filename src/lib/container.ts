@@ -14,6 +14,7 @@ import { SqliteDashboardRepository } from "../repositories/DashboardRepository.t
 import { SqliteAuthRepository } from "../repositories/AuthRepository.ts";
 import { ReviewService } from "../services/ReviewService.ts";
 import { SqliteReviewRepository } from "../repositories/ReviewRepository.ts";
+import { S3ObjectStorage } from "../services/ObjectStorage.ts";
 
 export type Services = {
   cartService: CartService;
@@ -23,6 +24,7 @@ export type Services = {
   dashboardService: DashboardService;
   authService: AuthService;
   reviewService: ReviewService;
+  objectStorage: S3ObjectStorage;
 };
 
 export function createContainer(db: Database): Services {
@@ -37,5 +39,6 @@ export function createContainer(db: Database): Services {
     dashboardService: new DashboardService(new SqliteDashboardRepository(db)),
     authService: new AuthService(new SqliteAuthRepository(db)),
     reviewService: new ReviewService(new SqliteReviewRepository(db)),
+    objectStorage: new S3ObjectStorage(),
   };
 }

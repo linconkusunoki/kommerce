@@ -72,7 +72,7 @@ export function createProduct(services: Services) {
 
             <div class="product-detail">
               <div class="product-detail-image">
-                {p.image_url ? <img src={p.image_url} alt={p.name} /> : <div class="product-detail-placeholder" />}
+                {p.image_url ? <img src={p.image_url} alt={p.image_alt_text || p.name} /> : <div class="product-detail-placeholder" />}
                 {onSale && <span class="badge badge-sale">Sale</span>}
               </div>
 

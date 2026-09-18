@@ -43,6 +43,7 @@ search.get("/search", (c) => {
                   price={p.price}
                   compare_at_price={p.compare_at_price}
                   image_url={p.image_url}
+                  image_alt_text={p.image_alt_text}
                   category_name={p.category_name}
                 />
               ))}

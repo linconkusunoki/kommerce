@@ -4,6 +4,7 @@ import type { Services } from "../../lib/container.ts";
 import { slugify } from "../../lib/utils.ts";
 import type { Variant } from "../../types/index.ts";
 import type { AppEnv } from "../../types/context.ts";
+import type { ObjectStorage } from "../../services/ObjectStorage.ts";
 
 function ProductForm({
   product,
@@ -20,6 +21,7 @@ function ProductForm({
     compare_at_price: number | null;
     category_id: number;
     image_url: string | null;
+    image_alt_text: string | null;
     featured: boolean;
   };
   categories: { id: number; name: string }[];
@@ -30,7 +32,7 @@ function ProductForm({
   return (
     <AdminLayout title={isEdit ? "Edit Product" : "New Product"}>
       {error && <div class="alert alert-error">{error}</div>}
-      <form method="post" class="admin-form">
+      <form method="post" class="admin-form" enctype="multipart/form-data">
         <div class="form-group">
           <label for="name">Name</label>
           <input type="text" id="name" name="name" value={product?.name ?? ""} required />
@@ -80,6 +82,14 @@ function ProductForm({
         <div class="form-group">
           <label for="image_url">Image URL</label>
           <input type="text" id="image_url" name="image_url" value={product?.image_url ?? ""} />
+        </div>
+        <div class="form-group">
+          <label for="image">Upload Image</label>
+          <input type="file" id="image" name="image" accept="image/jpeg,image/png,image/webp" />
+        </div>
+        <div class="form-group">
+          <label for="image_alt_text">Image Alt Text</label>
+          <input type="text" id="image_alt_text" name="image_alt_text" value={product?.image_alt_text ?? ""} />
         </div>
         <div class="form-group form-check">
           <label>
@@ -176,7 +186,7 @@ function ProductForm({
   );
 }
 
-export function createAdminProducts(services: Services) {
+export function createAdminProducts(services: Services, storage: ObjectStorage) {
   const products = new Hono<AppEnv>();
 
 products.get("/", (c) => {
@@ -241,7 +251,10 @@ products.post("/new", async (c) => {
   const categories = services.categoryService.getAll();
   const name = (body["name"] as string).trim();
 
+  let uploadedUrl: string | null = null;
   try {
+    const image = body["image"] instanceof File && body["image"].size > 0 ? body["image"] : null;
+    uploadedUrl = image ? await storage.upload(image) : null;
     const id = services.productService.create({
       name,
       slug: slugify(name),
@@ -249,11 +262,13 @@ products.post("/new", async (c) => {
       price: parseFloat(body["price"] as string),
       compare_at_price: body["compare_at_price"] ? parseFloat(body["compare_at_price"] as string) : null,
       category_id: parseInt(body["category_id"] as string),
-      image_url: (body["image_url"] as string) || null,
+      image_url: uploadedUrl ?? ((body["image_url"] as string) || null),
+      image_alt_text: (body["image_alt_text"] as string) || null,
       featured: !!body["featured"],
     });
     return c.redirect(`/admin/products/${id}/edit`);
   } catch (e: any) {
+    if (uploadedUrl) await storage.delete(uploadedUrl);
     return c.html(<ProductForm categories={categories} error={e.message} />);
   }
 });
@@ -272,8 +287,16 @@ products.post("/:id/edit", async (c) => {
   const id = c.req.param("id");
   const categories = services.categoryService.getAll();
   const name = (body["name"] as string).trim();
+  const product = services.productService.getById(id);
+  if (!product) return c.notFound();
+  const previousImageUrl = product.image_url;
 
+  let uploadedUrl: string | null = null;
+  let imageUrl: string | null = null;
   try {
+    const image = body["image"] instanceof File && body["image"].size > 0 ? body["image"] : null;
+    uploadedUrl = image ? await storage.upload(image) : null;
+    imageUrl = uploadedUrl ?? ((body["image_url"] as string) || null);
     services.productService.update(id, {
       name,
       slug: slugify(name),
@@ -281,15 +304,18 @@ products.post("/:id/edit", async (c) => {
       price: parseFloat(body["price"] as string),
       compare_at_price: body["compare_at_price"] ? parseFloat(body["compare_at_price"] as string) : null,
       category_id: parseInt(body["category_id"] as string),
-      image_url: (body["image_url"] as string) || null,
+      image_url: imageUrl,
+      image_alt_text: (body["image_alt_text"] as string) || null,
       featured: !!body["featured"],
     });
-    return c.redirect("/admin/products");
   } catch (e: any) {
+    if (uploadedUrl) await storage.delete(uploadedUrl);
     const product = services.productService.getById(id);
     const variants = services.productService.getVariants(id);
     return c.html(<ProductForm product={product ?? undefined} categories={categories} variants={variants} error={e.message} />);
   }
+  if (previousImageUrl !== imageUrl) await storage.delete(previousImageUrl ?? "");
+  return c.redirect("/admin/products");
 });
 
 products.post("/:id/variants/add", async (c) => {
@@ -316,9 +342,12 @@ products.post("/:id/variants/:variantId/delete", (c) => {
 });
 
 products.post("/:id/delete", (c) => {
-  services.productService.delete(c.req.param("id"));
+  const id = c.req.param("id");
+  const product = services.productService.getById(id);
+  services.productService.delete(id);
+  if (product?.image_url) void storage.delete(product.image_url);
   return c.redirect("/admin/products");
-  });
+});
 
   return products;
 }

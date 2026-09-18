@@ -2,6 +2,12 @@
 
 This context defines the language for customer accounts and product feedback in Kommerce.
 
+## Product Catalog
+
+**Product Image**:
+An optional public visual asset attached to one Product. A Product has at most one Product Image, which may be an uploaded file or an external image URL.
+_Avoid_: Gallery, product media
+
 ## People
 
 **Customer**:

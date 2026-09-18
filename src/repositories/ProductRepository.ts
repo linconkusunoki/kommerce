@@ -103,8 +103,8 @@ export class SqliteProductRepository implements IProductRepository {
   create(data: CreateProductInput): number {
     const result = this.db
       .prepare(
-        `INSERT INTO products (name, slug, description, price, compare_at_price, category_id, image_url, featured)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO products (name, slug, description, price, compare_at_price, category_id, image_url, image_alt_text, featured)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         data.name,
@@ -114,6 +114,7 @@ export class SqliteProductRepository implements IProductRepository {
         data.compare_at_price,
         data.category_id,
         data.image_url,
+        data.image_alt_text ?? null,
         data.featured ? 1 : 0,
       );
     return Number(result.lastInsertRowid);
@@ -123,7 +124,7 @@ export class SqliteProductRepository implements IProductRepository {
     this.db
       .prepare(
         `UPDATE products SET name = ?, slug = ?, description = ?, price = ?, compare_at_price = ?,
-         category_id = ?, image_url = ?, featured = ? WHERE id = ?`,
+         category_id = ?, image_url = ?, image_alt_text = ?, featured = ? WHERE id = ?`,
       )
       .run(
         data.name,
@@ -133,6 +134,7 @@ export class SqliteProductRepository implements IProductRepository {
         data.compare_at_price,
         data.category_id,
         data.image_url,
+        data.image_alt_text ?? null,
         data.featured ? 1 : 0,
         id,
       );

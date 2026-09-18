@@ -126,7 +126,7 @@ admin.get("/", (c) => {
   );
 });
 
-admin.route("/products", createAdminProducts(services));
+admin.route("/products", createAdminProducts(services, services.objectStorage));
 admin.route("/categories", createAdminCategories(services));
 admin.route("/orders", createAdminOrders(services));
 admin.route("/reviews", createAdminReviews(services));

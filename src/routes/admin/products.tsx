@@ -85,6 +85,13 @@ function ProductForm({
         </div>
         <div class="form-group">
           <label for="image">Upload Image</label>
+          {product?.image_url && (
+            <img
+              src={product.image_url}
+              alt={product.image_alt_text || product.name}
+              style="display: block; width: 160px; height: 160px; object-fit: cover; margin-bottom: 0.75rem; border-radius: 0.5rem;"
+            />
+          )}
           <input type="file" id="image" name="image" accept="image/jpeg,image/png,image/webp" />
         </div>
         <div class="form-group">

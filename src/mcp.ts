@@ -26,17 +26,12 @@ server.tool(
   },
 );
 
-server.tool(
-  "list_products",
-  "List all products with stock information",
-  {},
-  async () => {
-    const products = services.productService.getAll();
-    return {
-      content: [{ type: "text", text: JSON.stringify(products, null, 2) }],
-    };
-  },
-);
+server.tool("list_products", "List all products with stock information", {}, async () => {
+  const products = services.productService.getAll();
+  return {
+    content: [{ type: "text", text: JSON.stringify(products, null, 2) }],
+  };
+});
 
 server.tool(
   "get_product",
@@ -71,31 +66,21 @@ server.tool(
   },
 );
 
-server.tool(
-  "get_featured_products",
-  "Get featured/highlighted products",
-  {},
-  async () => {
-    const products = services.productService.getFeatured();
-    return {
-      content: [{ type: "text", text: JSON.stringify(products, null, 2) }],
-    };
-  },
-);
+server.tool("get_featured_products", "Get featured/highlighted products", {}, async () => {
+  const products = services.productService.getFeatured();
+  return {
+    content: [{ type: "text", text: JSON.stringify(products, null, 2) }],
+  };
+});
 
 // ─── Categories ────────────────────────────────────────────────────────────
 
-server.tool(
-  "list_categories",
-  "List all product categories with product counts",
-  {},
-  async () => {
-    const categories = services.categoryService.getAllWithCount();
-    return {
-      content: [{ type: "text", text: JSON.stringify(categories, null, 2) }],
-    };
-  },
-);
+server.tool("list_categories", "List all product categories with product counts", {}, async () => {
+  const categories = services.categoryService.getAllWithCount();
+  return {
+    content: [{ type: "text", text: JSON.stringify(categories, null, 2) }],
+  };
+});
 
 server.tool(
   "get_products_by_category",
@@ -115,10 +100,7 @@ server.tool(
   "list_orders",
   "List all orders, optionally filtered by status",
   {
-    status: z
-      .enum(ORDER_STATUSES)
-      .optional()
-      .describe("Filter by order status"),
+    status: z.enum(ORDER_STATUSES).optional().describe("Filter by order status"),
   },
   async ({ status }) => {
     const result = services.orderService.listOrders(status);
@@ -168,17 +150,12 @@ server.tool(
 
 // ─── Dashboard ─────────────────────────────────────────────────────────────
 
-server.tool(
-  "get_dashboard_stats",
-  "Get store statistics: revenue, order counts, product counts",
-  {},
-  async () => {
-    const stats = services.dashboardService.getStats();
-    return {
-      content: [{ type: "text", text: JSON.stringify(stats, null, 2) }],
-    };
-  },
-);
+server.tool("get_dashboard_stats", "Get store statistics: revenue, order counts, product counts", {}, async () => {
+  const stats = services.dashboardService.getStats();
+  return {
+    content: [{ type: "text", text: JSON.stringify(stats, null, 2) }],
+  };
+});
 
 // ─── Start ─────────────────────────────────────────────────────────────────
 

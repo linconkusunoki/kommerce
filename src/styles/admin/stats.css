@@ -28,5 +28,7 @@
 }
 
 @media (max-width: 768px) {
-  .admin-stats { grid-template-columns: 1fr; }
+  .admin-stats {
+    grid-template-columns: 1fr;
+  }
 }

@@ -11,8 +11,8 @@ describe("S3ObjectStorage", () => {
 
   test("rejects files over 5 MB", async () => {
     const storage = new S3ObjectStorage();
-    await expect(storage.upload(new File([new Uint8Array(5 * 1024 * 1024 + 1)], "image.png", { type: "image/png" }))).rejects.toThrow(
-      "Image must be 5 MB or smaller",
-    );
+    await expect(
+      storage.upload(new File([new Uint8Array(5 * 1024 * 1024 + 1)], "image.png", { type: "image/png" })),
+    ).rejects.toThrow("Image must be 5 MB or smaller");
   });
 });

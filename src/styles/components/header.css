@@ -35,7 +35,9 @@
     text-decoration: none;
   }
 
-  .nav a:hover { color: var(--color-text); }
+  .nav a:hover {
+    color: var(--color-text);
+  }
 
   .nav-cart {
     position: relative;
@@ -93,9 +95,13 @@
     align-items: center;
   }
 
-  .nav-search-btn:hover { color: var(--color-text); }
+  .nav-search-btn:hover {
+    color: var(--color-text);
+  }
 
   @media (max-width: 768px) {
-    .nav-search-input { width: 100px; }
+    .nav-search-input {
+      width: 100px;
+    }
   }
 }

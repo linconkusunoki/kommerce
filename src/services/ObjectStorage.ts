@@ -24,8 +24,11 @@ export class S3ObjectStorage implements ObjectStorage {
     const bytes = new Uint8Array((await file.arrayBuffer()).slice(0, 12));
     const validSignature =
       (file.type === "image/jpeg" && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) ||
-      (file.type === "image/png" && bytes.slice(0, 8).every((byte, index) => byte === [137, 80, 78, 71, 13, 10, 26, 10][index])) ||
-      (file.type === "image/webp" && String.fromCharCode(...bytes.slice(0, 4)) === "RIFF" && String.fromCharCode(...bytes.slice(8, 12)) === "WEBP");
+      (file.type === "image/png" &&
+        bytes.slice(0, 8).every((byte, index) => byte === [137, 80, 78, 71, 13, 10, 26, 10][index])) ||
+      (file.type === "image/webp" &&
+        String.fromCharCode(...bytes.slice(0, 4)) === "RIFF" &&
+        String.fromCharCode(...bytes.slice(8, 12)) === "WEBP");
     if (!validSignature) throw new Error("Uploaded file is not a valid image");
 
     const key = `products/${crypto.randomUUID()}`;

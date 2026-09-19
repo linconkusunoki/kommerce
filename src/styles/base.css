@@ -25,7 +25,9 @@
   --max-width: 1200px;
 }
 
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -47,6 +49,15 @@ a {
   transition: color 0.15s;
 }
 
-a:hover { color: var(--color-accent-hover); }
-a:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
-img { max-width: 100%; height: auto; display: block; }
+a:hover {
+  color: var(--color-accent-hover);
+}
+a:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+}
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}

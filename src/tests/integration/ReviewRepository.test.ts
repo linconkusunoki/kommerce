@@ -28,7 +28,13 @@ describe("SqliteReviewRepository", () => {
     const page = reviews.findVisibleByProduct(productId, 1, 10);
 
     expect(reviewId).toBeGreaterThan(0);
-    expect(page.reviews[0]).toMatchObject({ id: reviewId, author_name: "Customer 1", rating: 5, text: "Great", visible: true });
+    expect(page.reviews[0]).toMatchObject({
+      id: reviewId,
+      author_name: "Customer 1",
+      rating: 5,
+      text: "Great",
+      visible: true,
+    });
   });
 
   test("lists all reviews for a customer with product links", () => {
@@ -46,7 +52,7 @@ describe("SqliteReviewRepository", () => {
   test("paginates and excludes hidden reviews from public data and aggregates", () => {
     for (let i = 1; i <= 11; i++) {
       const customerId = seedCustomer(i);
-      const reviewId = reviews.createCustomerReview({ productId, customerId, rating: i % 5 + 1, text: null });
+      const reviewId = reviews.createCustomerReview({ productId, customerId, rating: (i % 5) + 1, text: null });
       if (i === 1) db.prepare("UPDATE product_reviews SET visible = 0 WHERE id = ?").run(reviewId);
     }
 
@@ -67,6 +73,8 @@ describe("SqliteReviewRepository", () => {
 
     expect(() => reviews.createCustomerReview({ productId, customerId, rating: 4, text: null })).toThrow();
     new SqliteProductRepository(db).delete(productId);
-    expect(db.query("SELECT COUNT(*) AS count FROM product_reviews WHERE product_id = ?").get(productId)).toEqual({ count: 0 });
+    expect(db.query("SELECT COUNT(*) AS count FROM product_reviews WHERE product_id = ?").get(productId)).toEqual({
+      count: 0,
+    });
   });
 });

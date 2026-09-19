@@ -24,8 +24,6 @@ export class SqliteVariantRepository implements IVariantRepository {
   }
 
   delete(variantId: number | string, productId: number | string): void {
-    this.db
-      .prepare("DELETE FROM product_variants WHERE id = ? AND product_id = ?")
-      .run(variantId, productId);
+    this.db.prepare("DELETE FROM product_variants WHERE id = ? AND product_id = ?").run(variantId, productId);
   }
 }

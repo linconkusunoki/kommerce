@@ -12,5 +12,9 @@
   text-decoration: none;
 }
 
-.breadcrumb a:hover { text-decoration: underline; }
-.breadcrumb-sep { color: var(--color-text-muted); }
+.breadcrumb a:hover {
+  text-decoration: underline;
+}
+.breadcrumb-sep {
+  color: var(--color-text-muted);
+}

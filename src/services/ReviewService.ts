@@ -39,7 +39,13 @@ export class ReviewService {
     return this.repo.createCustomerReview({ ...input, ...normalized });
   }
 
-  updateCustomerReview(id: number, productId: number, customerId: number, rating: number, text: string | null): boolean {
+  updateCustomerReview(
+    id: number,
+    productId: number,
+    customerId: number,
+    rating: number,
+    text: string | null,
+  ): boolean {
     const normalized = normalizeReview(rating, text);
     const existing = this.repo.findCustomerReview(productId, customerId);
     if (!normalized || !existing || existing.id !== id) return false;

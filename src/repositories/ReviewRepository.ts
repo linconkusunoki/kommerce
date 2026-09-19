@@ -88,18 +88,24 @@ export class SqliteReviewRepository implements IReviewRepository {
     const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
     const currentPage = Math.min(Math.max(1, page), totalPages);
     const rows = this.db
-      .query(`${reviewSelect} WHERE r.product_id = ? AND r.visible = 1 ORDER BY r.created_at DESC, r.id DESC LIMIT ? OFFSET ?`)
+      .query(
+        `${reviewSelect} WHERE r.product_id = ? AND r.visible = 1 ORDER BY r.created_at DESC, r.id DESC LIMIT ? OFFSET ?`,
+      )
       .all(productId, pageSize, (currentPage - 1) * pageSize) as RawReview[];
     return { reviews: rows.map(mapReview), page: currentPage, totalPages, totalCount };
   }
 
   getRatingSummary(productId: number): RatingSummary {
     const aggregate = this.db
-      .query("SELECT COUNT(*) AS total, COALESCE(AVG(rating), 0) AS average FROM product_reviews WHERE product_id = ? AND visible = 1")
+      .query(
+        "SELECT COUNT(*) AS total, COALESCE(AVG(rating), 0) AS average FROM product_reviews WHERE product_id = ? AND visible = 1",
+      )
       .get(productId) as { total: number; average: number };
     const distribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } as Record<1 | 2 | 3 | 4 | 5, number>;
     const rows = this.db
-      .query("SELECT rating, COUNT(*) AS count FROM product_reviews WHERE product_id = ? AND visible = 1 GROUP BY rating")
+      .query(
+        "SELECT rating, COUNT(*) AS count FROM product_reviews WHERE product_id = ? AND visible = 1 GROUP BY rating",
+      )
       .all(productId) as { rating: 1 | 2 | 3 | 4 | 5; count: number }[];
     for (const row of rows) distribution[row.rating] = Number(row.count);
     return { average: Number(aggregate.average), total: Number(aggregate.total), distribution };
@@ -121,7 +127,9 @@ export class SqliteReviewRepository implements IReviewRepository {
 
   updateCustomerReview(id: number, customerId: number, rating: number, text: string | null): void {
     this.db
-      .prepare("UPDATE product_reviews SET rating = ?, text = ?, updated_at = datetime('now') WHERE id = ? AND customer_id = ?")
+      .prepare(
+        "UPDATE product_reviews SET rating = ?, text = ?, updated_at = datetime('now') WHERE id = ? AND customer_id = ?",
+      )
       .run(rating, text, id, customerId);
   }
 
@@ -130,7 +138,9 @@ export class SqliteReviewRepository implements IReviewRepository {
   }
 
   setVisibility(id: number, visible: boolean): void {
-    this.db.prepare("UPDATE product_reviews SET visible = ?, updated_at = datetime('now') WHERE id = ?").run(visible ? 1 : 0, id);
+    this.db
+      .prepare("UPDATE product_reviews SET visible = ?, updated_at = datetime('now') WHERE id = ?")
+      .run(visible ? 1 : 0, id);
   }
 
   deleteReview(id: number): void {

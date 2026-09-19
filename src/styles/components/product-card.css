@@ -4,7 +4,9 @@
     border: 1px solid var(--color-border);
     border-radius: var(--radius);
     overflow: hidden;
-    transition: box-shadow 0.2s, transform 0.2s;
+    transition:
+      box-shadow 0.2s,
+      transform 0.2s;
   }
 
   :scope:hover {
@@ -29,7 +31,9 @@
     background: linear-gradient(135deg, #e5e7eb, #d1d5db);
   }
 
-  .product-card-body { padding: 0.85rem; }
+  .product-card-body {
+    padding: 0.85rem;
+  }
 
   .product-card-category {
     font-size: 0.75rem;
@@ -63,10 +67,16 @@
   text-decoration: none;
 }
 
-.product-card:hover { color: inherit; }
+.product-card:hover {
+  color: inherit;
+}
 
-.price { font-weight: 600; }
-.price-sale { color: var(--color-sale); }
+.price {
+  font-weight: 600;
+}
+.price-sale {
+  color: var(--color-sale);
+}
 .price-compare {
   color: var(--color-text-muted);
   text-decoration: line-through;
@@ -84,4 +94,7 @@
   font-weight: 600;
 }
 
-.badge-sale { background: var(--color-sale); color: white; }
+.badge-sale {
+  background: var(--color-sale);
+  color: white;
+}

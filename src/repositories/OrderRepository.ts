@@ -20,9 +20,7 @@ export class SqliteOrderRepository implements IOrderRepository {
       `INSERT INTO order_items (order_id, product_name, product_slug, variant_size, variant_color, price, quantity, total)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
     );
-    const decrementStock = this.db.prepare(
-      "UPDATE product_variants SET stock = stock - ? WHERE id = ?",
-    );
+    const decrementStock = this.db.prepare("UPDATE product_variants SET stock = stock - ? WHERE id = ?");
 
     const run = this.db.transaction(() => {
       const result = this.db
@@ -106,28 +104,20 @@ export class SqliteOrderRepository implements IOrderRepository {
   }
 
   getStatusCounts(): StatusCount[] {
-    return this.db
-      .query("SELECT status, COUNT(*) as count FROM orders GROUP BY status")
-      .all() as StatusCount[];
+    return this.db.query("SELECT status, COUNT(*) as count FROM orders GROUP BY status").all() as StatusCount[];
   }
 
   updateStatus(id: number | string, status: OrderStatus): void {
-    this.db
-      .query("UPDATE orders SET status = ?, updated_at = datetime('now') WHERE id = ?")
-      .run(status, id);
+    this.db.query("UPDATE orders SET status = ?, updated_at = datetime('now') WHERE id = ?").run(status, id);
   }
 
   getItems(orderId: number): OrderItem[] {
-    return this.db
-      .query("SELECT * FROM order_items WHERE order_id = ?")
-      .all(orderId) as OrderItem[];
+    return this.db.query("SELECT * FROM order_items WHERE order_id = ?").all(orderId) as OrderItem[];
   }
 
   getItemsByOrderNumber(orderNumber: string): OrderItem[] {
     return this.db
-      .query(
-        "SELECT oi.* FROM order_items oi JOIN orders o ON oi.order_id = o.id WHERE o.order_number = ?",
-      )
+      .query("SELECT oi.* FROM order_items oi JOIN orders o ON oi.order_id = o.id WHERE o.order_number = ?")
       .all(orderNumber) as OrderItem[];
   }
 }

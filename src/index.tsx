@@ -8,7 +8,7 @@ import { seed } from "./db/seed.ts";
 import { requireAuth } from "./middleware/auth.ts";
 import { visitorSession } from "./middleware/visitor.ts";
 import { getDb } from "./db/schema.ts";
-import { AdminLayout } from "./components/AdminLayout.tsx";
+import { AdminDashboardPage } from "./pages/admin/dashboard/AdminDashboardPage.tsx";
 import { createContainer } from "./lib/container.ts";
 import { SqliteVisitorRepository } from "./repositories/VisitorRepository.ts";
 import { createHome } from "./routes/home.tsx";
@@ -90,40 +90,7 @@ admin.use("*", requireAuth);
 
 admin.get("/", (c) => {
   const stats = services.dashboardService.getStats();
-  return c.html(
-    <AdminLayout title="Dashboard">
-      <div class="admin-stats">
-        <div class="stat-card">
-          <span class="stat-number">{stats.productCount}</span>
-          <span class="stat-label">Products</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-number">{stats.categoryCount}</span>
-          <span class="stat-label">Categories</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-number">{stats.orderCount}</span>
-          <span class="stat-label">Orders</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-number">{stats.pendingOrders}</span>
-          <span class="stat-label">Pending Orders</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-number">${stats.totalRevenue.toFixed(2)}</span>
-          <span class="stat-label">Total Revenue</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-number">${stats.monthRevenue.toFixed(2)}</span>
-          <span class="stat-label">Revenue This Month</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-number">${stats.avgOrder.toFixed(2)}</span>
-          <span class="stat-label">Avg Order Value</span>
-        </div>
-      </div>
-    </AdminLayout>,
-  );
+  return c.html(<AdminDashboardPage stats={stats} />);
 });
 
 admin.route("/products", createAdminProducts(services, services.objectStorage));

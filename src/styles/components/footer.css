@@ -13,8 +13,12 @@
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   }
 
-  .footer-brand .logo { color: white; }
-  .footer-brand .logo { text-decoration: none; }
+  .footer-brand .logo {
+    color: white;
+  }
+  .footer-brand .logo {
+    text-decoration: none;
+  }
 
   .footer-brand p {
     font-size: 0.9rem;
@@ -42,9 +46,13 @@
     text-decoration: none;
   }
 
-  .footer-links a:hover { color: white; }
+  .footer-links a:hover {
+    color: white;
+  }
 
-  .footer-bottom { padding-top: 1.5rem; }
+  .footer-bottom {
+    padding-top: 1.5rem;
+  }
 
   .footer-bottom p {
     font-size: 0.8rem;
@@ -52,6 +60,9 @@
   }
 
   @media (max-width: 600px) {
-    .footer-inner { flex-direction: column; gap: 2rem; }
+    .footer-inner {
+      flex-direction: column;
+      gap: 2rem;
+    }
   }
 }

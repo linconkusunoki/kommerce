@@ -8,7 +8,9 @@ type LayoutProps = PropsWithChildren<{
 
 export const Layout: FC<LayoutProps> = ({ title, description, children, styles }) => {
   const pageTitle = title ? `${title} | Kommerce` : "Kommerce - Clothing Store";
-  const pageDescription = description ?? "Shop quality clothing for every occasion at Kommerce. Discover the latest styles in tops, bottoms, outerwear and more.";
+  const pageDescription =
+    description ??
+    "Shop quality clothing for every occasion at Kommerce. Discover the latest styles in tops, bottoms, outerwear and more.";
 
   return (
     <html lang="en">
@@ -18,7 +20,9 @@ export const Layout: FC<LayoutProps> = ({ title, description, children, styles }
         <meta name="description" content={pageDescription} />
         <title>{pageTitle}</title>
         <link rel="stylesheet" href="/styles/core.css" />
-        {styles?.map((href) => <link rel="stylesheet" href={href} />)}
+        {styles?.map((href) => (
+          <link rel="stylesheet" href={href} />
+        ))}
       </head>
       <body>
         {children}
@@ -26,8 +30,36 @@ export const Layout: FC<LayoutProps> = ({ title, description, children, styles }
         {/* Chat Widget */}
         <div id="chat-widget">
           <button id="chat-toggle" aria-label="Open chat assistant">
-            <svg id="chat-icon-open" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-            <svg id="chat-icon-close" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            <svg
+              id="chat-icon-open"
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            </svg>
+            <svg
+              id="chat-icon-close"
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              style="display:none"
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
           </button>
           <div id="chat-panel" class="chat-panel-hidden">
             <div id="chat-header">
@@ -36,19 +68,36 @@ export const Layout: FC<LayoutProps> = ({ title, description, children, styles }
             </div>
             <div id="chat-messages">
               <div class="chat-msg bot">
-                <div class="chat-bubble">Hi! I'm your shopping assistant. Ask me about products, categories, sizes, or anything else!</div>
+                <div class="chat-bubble">
+                  Hi! I'm your shopping assistant. Ask me about products, categories, sizes, or anything else!
+                </div>
               </div>
             </div>
             <form id="chat-form">
               <input id="chat-input" type="text" placeholder="Ask about products..." autocomplete="off" />
               <button type="submit" aria-label="Send">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <line x1="22" y1="2" x2="11" y2="13" />
+                  <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                </svg>
               </button>
             </form>
           </div>
         </div>
 
-        <style dangerouslySetInnerHTML={{ __html: `
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
           #chat-widget {
             position: fixed;
             bottom: 24px;
@@ -189,9 +238,13 @@ export const Layout: FC<LayoutProps> = ({ title, description, children, styles }
           @media (max-width: 400px) {
             #chat-panel { width: calc(100vw - 32px); right: 0; }
           }
-        `}} />
+        `,
+          }}
+        />
 
-        <script dangerouslySetInnerHTML={{ __html: `
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
           (function() {
             var messages = [];
             var panel = document.getElementById('chat-panel');
@@ -266,9 +319,13 @@ export const Layout: FC<LayoutProps> = ({ title, description, children, styles }
               });
             });
           })();
-        `}} />
+        `,
+          }}
+        />
 
-        <script dangerouslySetInnerHTML={{ __html: `
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
           function updateCartBadge() {
             fetch('/api/cart/count', { cache: 'no-store' })
               .then(r => r.json())
@@ -285,7 +342,9 @@ export const Layout: FC<LayoutProps> = ({ title, description, children, styles }
           }
           updateCartBadge();
           window.addEventListener('pageshow', (e) => { if (e.persisted) updateCartBadge(); });
-        `}} />
+        `,
+          }}
+        />
       </body>
     </html>
   );

@@ -89,39 +89,39 @@ export function createChat(services: Services, apiKey = process.env.GEMINI_API_K
   }
 
   return async function chat(messages: ChatMessage[]): Promise<string> {
-  const model = genAI.getGenerativeModel({
-    model: "gemini-2.5-flash-lite",
-    tools: [{ functionDeclarations: TOOL_DECLARATIONS }],
-    systemInstruction: SYSTEM,
-  });
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.5-flash-lite",
+      tools: [{ functionDeclarations: TOOL_DECLARATIONS }],
+      systemInstruction: SYSTEM,
+    });
 
-  // Convert to Gemini history format (all but last message)
-  const history = messages.slice(0, -1).map((m) => ({
-    role: m.role === "assistant" ? "model" : "user",
-    parts: [{ text: m.content }],
-  }));
+    // Convert to Gemini history format (all but last message)
+    const history = messages.slice(0, -1).map((m) => ({
+      role: m.role === "assistant" ? "model" : "user",
+      parts: [{ text: m.content }],
+    }));
 
-  const session = model.startChat({ history });
-  const lastMessage = messages.at(-1)!.content;
+    const session = model.startChat({ history });
+    const lastMessage = messages.at(-1)!.content;
 
-  let result = await session.sendMessage(lastMessage);
+    let result = await session.sendMessage(lastMessage);
 
-  // Agentic loop — handle tool calls
-  while (result.response.functionCalls()?.length) {
-    const calls = result.response.functionCalls()!;
+    // Agentic loop — handle tool calls
+    while (result.response.functionCalls()?.length) {
+      const calls = result.response.functionCalls()!;
 
-    const responses = await Promise.all(
-      calls.map(async (call) => ({
-        functionResponse: {
-          name: call.name,
-          response: { result: await executeTool(call.name, call.args as Record<string, unknown>) },
-        },
-      })),
-    );
+      const responses = await Promise.all(
+        calls.map(async (call) => ({
+          functionResponse: {
+            name: call.name,
+            response: { result: await executeTool(call.name, call.args as Record<string, unknown>) },
+          },
+        })),
+      );
 
-    result = await session.sendMessage(responses);
-  }
+      result = await session.sendMessage(responses);
+    }
 
-  return result.response.text();
+    return result.response.text();
   };
 }

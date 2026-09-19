@@ -43,9 +43,16 @@ describe("AuthService.registerCustomer", () => {
 
 describe("AuthService customer sessions", () => {
   test("verifies credentials and creates a session", async () => {
-    const customer = { id: 4, email: "test@example.com", password_hash: await Bun.password.hash("password123"), display_name: "Jane" };
+    const customer = {
+      id: 4,
+      email: "test@example.com",
+      password_hash: await Bun.password.hash("password123"),
+      display_name: "Jane",
+    };
     const createSession = mock(() => ({ sessionId: "session-4", expiresAt: "" }));
-    const service = new AuthService(mockAuthRepo({ findCustomerByEmail: mock(() => customer), createCustomerSession: createSession }));
+    const service = new AuthService(
+      mockAuthRepo({ findCustomerByEmail: mock(() => customer), createCustomerSession: createSession }),
+    );
 
     expect(await service.loginCustomer("TEST@example.com", "password123")).toBe("session-4");
     expect(await service.loginCustomer("test@example.com", "wrong-password")).toBeNull();

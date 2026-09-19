@@ -8,20 +8,49 @@
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s;
   font-family: inherit;
   text-decoration: none;
   background: var(--color-border);
   color: var(--color-text);
 }
 
-.btn:hover { background: #d1d5db; }
-.btn-primary { background: var(--color-primary); color: white; }
-.btn-primary:hover { background: var(--color-primary-hover); }
-.btn-outline { background: transparent; border-color: var(--color-border); }
-.btn-outline:hover { background: var(--color-bg); }
-.btn-danger { background: var(--color-danger); color: white; border: none; }
-.btn-danger:hover { background: var(--color-danger-hover); }
-.btn-lg { padding: 0.75rem 2rem; font-size: 1rem; }
-.btn-sm { padding: 0.3rem 0.75rem; font-size: 0.8rem; }
-.btn-block { width: 100%; }
+.btn:hover {
+  background: #d1d5db;
+}
+.btn-primary {
+  background: var(--color-primary);
+  color: white;
+}
+.btn-primary:hover {
+  background: var(--color-primary-hover);
+}
+.btn-outline {
+  background: transparent;
+  border-color: var(--color-border);
+}
+.btn-outline:hover {
+  background: var(--color-bg);
+}
+.btn-danger {
+  background: var(--color-danger);
+  color: white;
+  border: none;
+}
+.btn-danger:hover {
+  background: var(--color-danger-hover);
+}
+.btn-lg {
+  padding: 0.75rem 2rem;
+  font-size: 1rem;
+}
+.btn-sm {
+  padding: 0.3rem 0.75rem;
+  font-size: 0.8rem;
+}
+.btn-block {
+  width: 100%;
+}

@@ -1,9 +1,5 @@
 import type { IProductRepository, IVariantRepository } from "../repositories/interfaces.ts";
-import type {
-  CreateProductInput,
-  CreateVariantInput,
-  UpdateProductInput,
-} from "../types/index.ts";
+import type { CreateProductInput, CreateVariantInput, UpdateProductInput } from "../types/index.ts";
 
 export class ProductService {
   constructor(

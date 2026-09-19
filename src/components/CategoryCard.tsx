@@ -12,9 +12,7 @@ export const CategoryCard: FC<CategoryCardProps> = ({ name, slug, description, i
     <a href={"/categories/" + slug} class="category-card-link">
       <div class="category-card">
         <div class="category-card-image">
-          {image_url
-            ? <img src={image_url} alt={name} />
-            : <div class="category-card-placeholder" />}
+          {image_url ? <img src={image_url} alt={name} /> : <div class="category-card-placeholder" />}
         </div>
         <div class="category-card-body">
           <h3 class="category-card-title">{name}</h3>

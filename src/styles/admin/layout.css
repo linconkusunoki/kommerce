@@ -1,8 +1,24 @@
-.admin-wrapper { display: flex; min-height: 100vh; }
-.admin-main { flex: 1; padding: 2rem; }
-.admin-page-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem; }
-.admin-toolbar { display: flex; justify-content: flex-end; margin-bottom: 1rem; }
-.admin-form { max-width: 600px; }
+.admin-wrapper {
+  display: flex;
+  min-height: 100vh;
+}
+.admin-main {
+  flex: 1;
+  padding: 2rem;
+}
+.admin-page-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+}
+.admin-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
+}
+.admin-form {
+  max-width: 600px;
+}
 
 @scope (.admin-sidebar) {
   :scope {
@@ -35,7 +51,9 @@
     border-radius: var(--radius-sm);
     font-size: 0.9rem;
     color: rgba(255, 255, 255, 0.7);
-    transition: background 0.15s, color 0.15s;
+    transition:
+      background 0.15s,
+      color 0.15s;
     text-decoration: none;
   }
 
@@ -69,7 +87,10 @@
       padding: 1rem;
     }
 
-    .admin-nav { flex-direction: row; gap: 0.5rem; }
+    .admin-nav {
+      flex-direction: row;
+      gap: 0.5rem;
+    }
 
     .admin-sidebar-footer {
       margin-top: 0;
@@ -81,5 +102,7 @@
 }
 
 @media (max-width: 768px) {
-  .admin-wrapper { flex-direction: column; }
+  .admin-wrapper {
+    flex-direction: column;
+  }
 }

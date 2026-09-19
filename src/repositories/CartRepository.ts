@@ -47,9 +47,7 @@ export class SqliteCartRepository implements ICartRepository {
   }
 
   removeItem(itemId: number, sessionId: string): void {
-    this.db
-      .query("DELETE FROM cart_items WHERE id = ? AND session_id = ?")
-      .run(itemId, sessionId);
+    this.db.query("DELETE FROM cart_items WHERE id = ? AND session_id = ?").run(itemId, sessionId);
   }
 
   clearCart(sessionId: string): void {

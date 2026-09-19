@@ -11,9 +11,7 @@ export function createTestDb(): Database {
 export function seedCategory(db: Database, overrides: Partial<{ name: string; slug: string }> = {}) {
   const name = overrides.name ?? "Test Category";
   const slug = overrides.slug ?? "test-category";
-  const result = db
-    .prepare("INSERT INTO categories (name, slug, sort_order) VALUES (?, ?, 0)")
-    .run(name, slug);
+  const result = db.prepare("INSERT INTO categories (name, slug, sort_order) VALUES (?, ?, 0)").run(name, slug);
   return Number(result.lastInsertRowid);
 }
 
@@ -27,9 +25,7 @@ export function seedProduct(
   const price = overrides.price ?? 29.99;
   const featured = overrides.featured ?? 0;
   const result = db
-    .prepare(
-      "INSERT INTO products (name, slug, description, price, category_id, featured) VALUES (?, ?, '', ?, ?, ?)",
-    )
+    .prepare("INSERT INTO products (name, slug, description, price, category_id, featured) VALUES (?, ?, '', ?, ?, ?)")
     .run(name, slug, price, categoryId, featured);
   return Number(result.lastInsertRowid);
 }

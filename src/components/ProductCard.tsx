@@ -10,15 +10,21 @@ type ProductCardProps = {
   category_name?: string;
 };
 
-export const ProductCard: FC<ProductCardProps> = ({ name, slug, price, compare_at_price, image_url, image_alt_text, category_name }) => {
+export const ProductCard: FC<ProductCardProps> = ({
+  name,
+  slug,
+  price,
+  compare_at_price,
+  image_url,
+  image_alt_text,
+  category_name,
+}) => {
   const onSale = compare_at_price != null && compare_at_price > price;
 
   return (
     <a href={`/products/${slug}`} class="product-card">
       <div class="product-card-image">
-        {image_url
-          ? <img src={image_url} alt={image_alt_text || name} />
-          : <div class="product-card-placeholder" />}
+        {image_url ? <img src={image_url} alt={image_alt_text || name} /> : <div class="product-card-placeholder" />}
         {onSale && <span class="badge badge-sale">Sale</span>}
       </div>
       <div class="product-card-body">

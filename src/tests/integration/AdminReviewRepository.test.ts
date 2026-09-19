@@ -12,7 +12,11 @@ beforeEach(() => {
   repo = new SqliteReviewRepository(db);
   productId = seedProduct(db, seedCategory(db));
   db.prepare("INSERT INTO admin_users (username, password_hash) VALUES (?, ?)").run("admin", "hash");
-  db.prepare("INSERT INTO customer_users (email, password_hash, display_name) VALUES (?, ?, ?)").run("customer@example.com", "hash", "Customer");
+  db.prepare("INSERT INTO customer_users (email, password_hash, display_name) VALUES (?, ?, ?)").run(
+    "customer@example.com",
+    "hash",
+    "Customer",
+  );
 });
 
 describe("SqliteReviewRepository admin review management", () => {

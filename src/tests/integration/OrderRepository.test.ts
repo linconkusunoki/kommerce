@@ -1,12 +1,6 @@
 import { describe, test, expect, beforeEach } from "bun:test";
 import { SqliteOrderRepository } from "../../repositories/OrderRepository.ts";
-import {
-  createTestDb,
-  seedCategory,
-  seedProduct,
-  seedVariant,
-  seedVisitorSession,
-} from "./helpers.ts";
+import { createTestDb, seedCategory, seedProduct, seedVariant, seedVisitorSession } from "./helpers.ts";
 import type { Database } from "bun:sqlite";
 import type { CartItem, PlaceOrderInput } from "../../types/index.ts";
 
@@ -69,9 +63,8 @@ describe("OrderRepository.create", () => {
     expect(order!.total).toBeCloseTo(59.98);
 
     // Cart should be cleared
-    const cartCount = (
-      db.query("SELECT COUNT(*) as count FROM cart_items WHERE session_id = ?").get(sessionId) as any
-    ).count;
+    const cartCount = (db.query("SELECT COUNT(*) as count FROM cart_items WHERE session_id = ?").get(sessionId) as any)
+      .count;
     expect(cartCount).toBe(0);
   });
 
@@ -88,16 +81,12 @@ describe("OrderRepository.create", () => {
   });
 
   test("decrements product variant stock atomically", () => {
-    const before = (
-      db.query("SELECT stock FROM product_variants WHERE id = ?").get(variantId) as any
-    ).stock;
+    const before = (db.query("SELECT stock FROM product_variants WHERE id = ?").get(variantId) as any).stock;
 
     const items = [makeCartItem({ quantity: 3 })];
     repo.create(validInput, items, "KOM-TEST-003", sessionId);
 
-    const after = (
-      db.query("SELECT stock FROM product_variants WHERE id = ?").get(variantId) as any
-    ).stock;
+    const after = (db.query("SELECT stock FROM product_variants WHERE id = ?").get(variantId) as any).stock;
     expect(after).toBe(before - 3);
   });
 });
@@ -110,9 +99,17 @@ describe("OrderRepository.findByNumber", () => {
 
 describe("OrderRepository.findByCustomer", () => {
   test("returns an order for its customer even when checkout email differs", () => {
-    db.exec("INSERT INTO customer_users (email, password_hash, display_name) VALUES ('account@example.com', 'hash', 'Customer')");
+    db.exec(
+      "INSERT INTO customer_users (email, password_hash, display_name) VALUES ('account@example.com', 'hash', 'Customer')",
+    );
     const customerId = Number(db.query("SELECT last_insert_rowid() AS id").get() as { id: number });
-    repo.create({ ...validInput, email: "checkout@example.com" }, [makeCartItem()], "KOM-CUSTOMER-1", sessionId, customerId);
+    repo.create(
+      { ...validInput, email: "checkout@example.com" },
+      [makeCartItem()],
+      "KOM-CUSTOMER-1",
+      sessionId,
+      customerId,
+    );
 
     const orders = repo.findByCustomer(customerId, "account@example.com");
 

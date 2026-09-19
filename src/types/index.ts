@@ -144,14 +144,7 @@ export type RatingSummary = {
 
 export type StatusCount = { status: string; count: number };
 
-export const ORDER_STATUSES = [
-  "pending",
-  "confirmed",
-  "processing",
-  "shipped",
-  "delivered",
-  "cancelled",
-] as const;
+export const ORDER_STATUSES = ["pending", "confirmed", "processing", "shipped", "delivered", "cancelled"] as const;
 
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
 

@@ -1,10 +1,5 @@
 import type { Database } from "bun:sqlite";
-import type {
-  Category,
-  CategoryWithCount,
-  CreateCategoryInput,
-  UpdateCategoryInput,
-} from "../types/index.ts";
+import type { Category, CategoryWithCount, CreateCategoryInput, UpdateCategoryInput } from "../types/index.ts";
 import type { ICategoryRepository } from "./interfaces.ts";
 
 export class SqliteCategoryRepository implements ICategoryRepository {

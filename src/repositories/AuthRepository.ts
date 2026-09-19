@@ -6,9 +6,7 @@ export class SqliteAuthRepository implements IAuthRepository {
   constructor(private db: Database) {}
 
   findUserByUsername(username: string): AdminUserWithHash | null {
-    return this.db
-      .query("SELECT * FROM admin_users WHERE username = ?")
-      .get(username) as AdminUserWithHash | null;
+    return this.db.query("SELECT * FROM admin_users WHERE username = ?").get(username) as AdminUserWithHash | null;
   }
 
   createSession(userId: number): { sessionId: string; expiresAt: string } {

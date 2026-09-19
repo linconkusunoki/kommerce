@@ -52,7 +52,7 @@ describe("ReviewService.updateCustomerReview", () => {
     const update = mock(() => {});
     const service = new ReviewService(
       mockReviewRepo({
-        findCustomerReview: mock(() => ({ id: 8, product_id: 3 } as any)),
+        findCustomerReview: mock(() => ({ id: 8, product_id: 3 }) as any),
         updateCustomerReview: update,
       }),
     );

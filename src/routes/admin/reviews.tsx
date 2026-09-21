@@ -43,7 +43,12 @@ export function createAdminReviews(services: Services) {
   });
 
   reviews.post("/:id/hide", (c) => {
-    services.reviewService.setVisibility(Number.parseInt(c.req.param("id"), 10), false);
+    services.reviewService.hideReview(Number.parseInt(c.req.param("id"), 10));
+    return c.redirect("/admin/reviews");
+  });
+
+  reviews.post("/:id/show", (c) => {
+    services.reviewService.showReview(Number.parseInt(c.req.param("id"), 10));
     return c.redirect("/admin/reviews");
   });
 

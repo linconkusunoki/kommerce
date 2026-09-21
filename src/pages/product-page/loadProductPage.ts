@@ -10,14 +10,17 @@ export function loadProductPage(
   const variants = services.productService.getVariants(product.id);
   const customer = input.customerSessionId ? services.authService.getCustomerSession(input.customerSessionId) : null;
 
+  const reviewPage = services.reviewService.getVisiblePage(product.id, input.page);
+  const ratingSummary = services.reviewService.getRatingSummary(product.id);
+
   return {
     product,
     variants,
     sizes: [...new Set(variants.map((variant) => variant.size))],
     colors: [...new Set(variants.map((variant) => variant.color))],
     onSale: product.compare_at_price != null && product.compare_at_price > product.price,
-    reviewPage: services.reviewService.getVisiblePage(product.id, input.page),
-    ratingSummary: services.reviewService.getRatingSummary(product.id),
+    reviewPage,
+    ratingSummary,
     customerReview: customer ? services.reviewService.getCustomerReview(product.id, customer.id) : null,
     customer,
     cartCount: services.cartService.getCount(input.visitorId),

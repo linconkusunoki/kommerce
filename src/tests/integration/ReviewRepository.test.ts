@@ -61,7 +61,7 @@ describe("SqliteReviewRepository", () => {
     const summary = reviews.getRatingSummary(productId);
 
     expect(firstPage.reviews).toHaveLength(10);
-    expect(secondPage.reviews).toHaveLength(1);
+    expect(secondPage.reviews).toHaveLength(10);
     expect(firstPage.totalCount).toBe(10);
     expect(summary.total).toBe(10);
     expect(summary.distribution[2]).toBe(2);

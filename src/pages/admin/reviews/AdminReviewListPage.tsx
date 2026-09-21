@@ -81,10 +81,16 @@ export function AdminReviewListPage({ reviews, products, visibility, productFilt
                 <td>{review.visible ? "Visible" : "Hidden"}</td>
                 <td>{formatDate(review.updated_at)}</td>
                 <td class="admin-actions">
-                  {review.visible && (
+                  {review.visible ? (
                     <form method="post" action={`/admin/reviews/${review.id}/hide`}>
                       <button type="submit" class="btn btn-sm btn-outline">
                         Hide
+                      </button>
+                    </form>
+                  ) : (
+                    <form method="post" action={`/admin/reviews/${review.id}/show`}>
+                      <button type="submit" class="btn btn-sm btn-outline">
+                        Show
                       </button>
                     </form>
                   )}

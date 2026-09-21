@@ -37,19 +37,20 @@ export function createProduct(services: Services) {
     const product = services.productService.getBySlug(c.req.param("slug"));
     if (!product) return c.notFound();
     const customer = c.get("customer");
-    const existing = services.reviewService.getCustomerReview(product.id, customer.id);
-    if (existing) return c.redirect(`/products/${product.slug}?review_error=You+already+reviewed+this+product`);
     const body = await c.req.parseBody();
-    const reviewId = services.reviewService.createCustomerReview({
+    const result = services.reviewService.createCustomerReview({
       productId: product.id,
       customerId: customer.id,
       rating: Number.parseInt(String(body.rating ?? ""), 10),
       text: String(body.text ?? ""),
     });
-    if (!reviewId)
-      return c.redirect(
-        `/products/${product.slug}?review_error=Rating+must+be+1+to+5+and+text+must+be+under+2000+characters`,
-      );
+    if (!result.ok) {
+      const error =
+        result.reason === "duplicate"
+          ? "You+already+reviewed+this+product"
+          : "Rating+must+be+1+to+5+and+text+must+be+under+2000+characters";
+      return c.redirect(`/products/${product.slug}?review_error=${error}`);
+    }
     return c.redirect(`/products/${product.slug}`);
   });
 
@@ -65,7 +66,7 @@ export function createProduct(services: Services) {
       Number.parseInt(String(body.rating ?? ""), 10),
       String(body.text ?? ""),
     );
-    if (!updated) return c.redirect(`/products/${product.slug}?review_error=Review+could+not+be+updated`);
+    if (!updated.ok) return c.redirect(`/products/${product.slug}?review_error=Review+could+not+be+updated`);
     return c.redirect(`/products/${product.slug}`);
   });
 

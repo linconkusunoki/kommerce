@@ -31,3 +31,17 @@ src/
 For POST routes, parse the form in the route, pass validated input to an action or service, then redirect or render an error. Do not create generic `BaseController`, `PageService`, or universal loader abstractions.
 
 Apply this structure when a route becomes difficult to navigate. Leave small routes unchanged.
+
+## Agent skills
+
+### Issue tracker
+
+Issues and specs use local Markdown files under `.scratch/`. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Uses the default labels: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, and `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context layout with root `CONTEXT.md` and `docs/adr/`. See `docs/agents/domain.md`.

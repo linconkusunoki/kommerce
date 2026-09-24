@@ -31,10 +31,11 @@ export function createContainer(db: Database): Services {
   const variantRepo = new SqliteVariantRepository(db);
   const cartRepo = new SqliteCartRepository(db);
   const reviewRepo = new SqliteReviewRepository(db);
+  const objectStorage = new S3ObjectStorage();
 
   return {
     cartService: new CartService(cartRepo, variantRepo),
-    productService: new ProductService(new SqliteProductRepository(db), variantRepo),
+    productService: new ProductService(new SqliteProductRepository(db), variantRepo, objectStorage),
     categoryService: new CategoryService(new SqliteCategoryRepository(db)),
     orderService: new OrderService(new SqliteOrderRepository(db), cartRepo),
     dashboardService: new DashboardService(new SqliteDashboardRepository(db)),
@@ -44,6 +45,6 @@ export function createContainer(db: Database): Services {
       customerReviews: reviewRepo,
       adminReviews: reviewRepo,
     }),
-    objectStorage: new S3ObjectStorage(),
+    objectStorage,
   };
 }

@@ -5,9 +5,8 @@ import { loadAdminProductForm, loadAdminProductsPage } from "../../pages/admin/p
 import type { Services } from "../../lib/container.ts";
 import { slugify } from "../../lib/utils.ts";
 import type { AppEnv } from "../../types/context.ts";
-import type { ObjectStorage } from "../../services/ObjectStorage.ts";
 
-export function createAdminProducts(services: Services, storage: ObjectStorage) {
+export function createAdminProducts(services: Services) {
   const products = new Hono<AppEnv>();
 
   products.get("/", (c) => {
@@ -26,24 +25,24 @@ export function createAdminProducts(services: Services, storage: ObjectStorage) 
     const categories = services.categoryService.getAll();
     const name = (body["name"] as string).trim();
 
-    let uploadedUrl: string | null = null;
     try {
       const image = body["image"] instanceof File && body["image"].size > 0 ? body["image"] : null;
-      uploadedUrl = image ? await storage.upload(image) : null;
-      const id = services.productService.create({
-        name,
-        slug: slugify(name),
-        description: (body["description"] as string) ?? "",
-        price: parseFloat(body["price"] as string),
-        compare_at_price: body["compare_at_price"] ? parseFloat(body["compare_at_price"] as string) : null,
-        category_id: parseInt(body["category_id"] as string),
-        image_url: uploadedUrl ?? ((body["image_url"] as string) || null),
-        image_alt_text: (body["image_alt_text"] as string) || null,
-        featured: !!body["featured"],
-      });
+      const id = await services.productService.createWithImage(
+        {
+          name,
+          slug: slugify(name),
+          description: (body["description"] as string) ?? "",
+          price: parseFloat(body["price"] as string),
+          compare_at_price: body["compare_at_price"] ? parseFloat(body["compare_at_price"] as string) : null,
+          category_id: parseInt(body["category_id"] as string),
+          image_url: (body["image_url"] as string) || null,
+          image_alt_text: (body["image_alt_text"] as string) || null,
+          featured: !!body["featured"],
+        },
+        image,
+      );
       return c.redirect(`/admin/products/${id}/edit`);
     } catch (e: any) {
-      if (uploadedUrl) await storage.delete(uploadedUrl);
       return c.html(<ProductForm categories={categories} error={e.message} />);
     }
   });
@@ -61,33 +60,29 @@ export function createAdminProducts(services: Services, storage: ObjectStorage) 
     const name = (body["name"] as string).trim();
     const product = services.productService.getById(id);
     if (!product) return c.notFound();
-    const previousImageUrl = product.image_url;
-
-    let uploadedUrl: string | null = null;
-    let imageUrl: string | null = null;
     try {
       const image = body["image"] instanceof File && body["image"].size > 0 ? body["image"] : null;
-      uploadedUrl = image ? await storage.upload(image) : null;
-      imageUrl = uploadedUrl ?? ((body["image_url"] as string) || null);
-      services.productService.update(id, {
-        name,
-        slug: slugify(name),
-        description: (body["description"] as string) ?? "",
-        price: parseFloat(body["price"] as string),
-        compare_at_price: body["compare_at_price"] ? parseFloat(body["compare_at_price"] as string) : null,
-        category_id: parseInt(body["category_id"] as string),
-        image_url: imageUrl,
-        image_alt_text: (body["image_alt_text"] as string) || null,
-        featured: !!body["featured"],
-      });
+      await services.productService.updateWithImage(
+        id,
+        {
+          name,
+          slug: slugify(name),
+          description: (body["description"] as string) ?? "",
+          price: parseFloat(body["price"] as string),
+          compare_at_price: body["compare_at_price"] ? parseFloat(body["compare_at_price"] as string) : null,
+          category_id: parseInt(body["category_id"] as string),
+          image_url: (body["image_url"] as string) || null,
+          image_alt_text: (body["image_alt_text"] as string) || null,
+          featured: !!body["featured"],
+        },
+        image,
+      );
     } catch (e: any) {
-      if (uploadedUrl) await storage.delete(uploadedUrl);
       const page = loadAdminProductForm(services, id);
       return c.html(
         <ProductForm product={page?.product} categories={categories} variants={page?.variants} error={e.message} />,
       );
     }
-    if (previousImageUrl !== imageUrl) await storage.delete(previousImageUrl ?? "");
     return c.redirect("/admin/products");
   });
 
@@ -114,11 +109,9 @@ export function createAdminProducts(services: Services, storage: ObjectStorage) 
     return c.redirect(`/admin/products/${id}/edit`);
   });
 
-  products.post("/:id/delete", (c) => {
+  products.post("/:id/delete", async (c) => {
     const id = c.req.param("id");
-    const product = services.productService.getById(id);
-    services.productService.delete(id);
-    if (product?.image_url) void storage.delete(product.image_url);
+    await services.productService.deleteWithImage(id);
     return c.redirect("/admin/products");
   });
 

@@ -93,7 +93,7 @@ admin.get("/", (c) => {
   return c.html(<AdminDashboardPage stats={stats} />);
 });
 
-admin.route("/products", createAdminProducts(services, services.objectStorage));
+admin.route("/products", createAdminProducts(services));
 admin.route("/categories", createAdminCategories(services));
 admin.route("/orders", createAdminOrders(services));
 admin.route("/reviews", createAdminReviews(services));

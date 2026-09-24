@@ -6,6 +6,19 @@ import type { AppEnv } from "../types/context.ts";
 
 export function createHome(services: Services) {
   const home = new Hono<AppEnv>();
-  home.get("/", (c) => c.html(<HomePage data={loadHomePage(services, c.get("visitorId"))} />));
+  home.get("/", (c) =>
+    c.html(
+      <HomePage
+        data={loadHomePage(
+          {
+            cartService: services.cartService,
+            categoryService: services.categoryService,
+            productService: services.productService,
+          },
+          c.get("visitorId"),
+        )}
+      />,
+    ),
+  );
   return home;
 }

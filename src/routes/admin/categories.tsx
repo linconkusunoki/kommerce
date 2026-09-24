@@ -13,7 +13,7 @@ export function createAdminCategories(services: Services) {
   const categories = new Hono<AppEnv>();
 
   categories.get("/", (c) => {
-    const { categories: allCategories } = loadAdminCategoriesPage(services);
+    const { categories: allCategories } = loadAdminCategoriesPage({ categoryService: services.categoryService });
     return c.html(<CategoryListPage categories={allCategories} />);
   });
 
@@ -38,7 +38,7 @@ export function createAdminCategories(services: Services) {
   });
 
   categories.get("/:id/edit", (c) => {
-    const page = loadAdminCategoryForm(services, c.req.param("id"));
+    const page = loadAdminCategoryForm({ categoryService: services.categoryService }, c.req.param("id"));
     if (!page || !page.category) return c.notFound();
     return c.html(<CategoryForm category={page.category} />);
   });
@@ -58,7 +58,7 @@ export function createAdminCategories(services: Services) {
       });
       return c.redirect("/admin/categories");
     } catch (e: any) {
-      const page = loadAdminCategoryForm(services, id);
+      const page = loadAdminCategoryForm({ categoryService: services.categoryService }, id);
       return c.html(<CategoryForm category={page?.category} error={e.message} />);
     }
   });

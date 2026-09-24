@@ -1,7 +1,8 @@
-import type { Services } from "../../../lib/container.ts";
+import type { ProductService } from "../../../services/ProductService.ts";
+import type { ReviewService } from "../../../services/ReviewService.ts";
 
 export function loadAdminReviewsPage(
-  services: Services,
+  services: { reviewService: ReviewService; productService: ProductService },
   input: { visibility: "all" | "visible" | "hidden"; productId?: number },
 ) {
   return {
@@ -10,6 +11,6 @@ export function loadAdminReviewsPage(
   };
 }
 
-export function loadAdminReviewForm(services: Services) {
+export function loadAdminReviewForm(services: { productService: ProductService }) {
   return { products: services.productService.getAll() };
 }

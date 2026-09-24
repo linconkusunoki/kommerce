@@ -1,7 +1,15 @@
-import type { Services } from "../../lib/container.ts";
+import type { AuthService } from "../../services/AuthService.ts";
+import type { CartService } from "../../services/CartService.ts";
+import type { ProductService } from "../../services/ProductService.ts";
+import type { ReviewService } from "../../services/ReviewService.ts";
 
 export function loadProductPage(
-  services: Services,
+  services: {
+    productService: ProductService;
+    authService: AuthService;
+    reviewService: ReviewService;
+    cartService: CartService;
+  },
   input: { slug: string; visitorId: string; page: number; customerSessionId?: string },
 ) {
   const product = services.productService.getBySlug(input.slug);

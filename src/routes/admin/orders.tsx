@@ -11,12 +11,12 @@ export function createAdminOrders(services: Services) {
 
   orders.get("/", (c) => {
     const statusFilter = c.req.query("status") || "";
-    const page = loadAdminOrdersPage(services, statusFilter);
+    const page = loadAdminOrdersPage({ orderService: services.orderService }, statusFilter);
     return c.html(<AdminOrderListPage {...page} statusFilter={statusFilter} />);
   });
 
   orders.get("/:id", (c) => {
-    const page = loadAdminOrderPage(services, c.req.param("id"));
+    const page = loadAdminOrderPage({ orderService: services.orderService }, c.req.param("id"));
     if (!page) return c.notFound();
     return c.html(<AdminOrderDetailPage {...page} />);
   });

@@ -1,10 +1,14 @@
-import type { Services } from "../../../lib/container.ts";
+import type { CategoryService } from "../../../services/CategoryService.ts";
+import type { ProductService } from "../../../services/ProductService.ts";
 
-export function loadAdminProductsPage(services: Services) {
+export function loadAdminProductsPage(services: { productService: ProductService }) {
   return { products: services.productService.getAll() };
 }
 
-export function loadAdminProductForm(services: Services, productId?: string) {
+export function loadAdminProductForm(
+  services: { categoryService: CategoryService; productService: ProductService },
+  productId?: string,
+) {
   const categories = services.categoryService.getAll();
   if (!productId) return { categories, product: undefined, variants: undefined };
 

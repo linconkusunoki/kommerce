@@ -10,12 +10,15 @@ export function createAdminProducts(services: Services) {
   const products = new Hono<AppEnv>();
 
   products.get("/", (c) => {
-    const { products: allProducts } = loadAdminProductsPage(services);
+    const { products: allProducts } = loadAdminProductsPage({ productService: services.productService });
     return c.html(<ProductListPage products={allProducts} />);
   });
 
   products.get("/new", (c) => {
-    const page = loadAdminProductForm(services);
+    const page = loadAdminProductForm({
+      categoryService: services.categoryService,
+      productService: services.productService,
+    });
     if (!page) return c.notFound();
     return c.html(<ProductForm categories={page.categories} />);
   });
@@ -48,7 +51,10 @@ export function createAdminProducts(services: Services) {
   });
 
   products.get("/:id/edit", (c) => {
-    const page = loadAdminProductForm(services, c.req.param("id"));
+    const page = loadAdminProductForm(
+      { categoryService: services.categoryService, productService: services.productService },
+      c.req.param("id"),
+    );
     if (!page || !page.product) return c.notFound();
     return c.html(<ProductForm {...page} />);
   });
@@ -78,7 +84,10 @@ export function createAdminProducts(services: Services) {
         image,
       );
     } catch (e: any) {
-      const page = loadAdminProductForm(services, id);
+      const page = loadAdminProductForm(
+        { categoryService: services.categoryService, productService: services.productService },
+        id,
+      );
       return c.html(
         <ProductForm product={page?.product} categories={categories} variants={page?.variants} error={e.message} />,
       );

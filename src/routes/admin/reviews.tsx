@@ -16,13 +16,16 @@ export function createAdminReviews(services: Services) {
     const productIdValue = c.req.query("product_id") || "";
     const productId = Number.parseInt(productIdValue, 10);
     const productFilter = Number.isInteger(productId) && productId > 0 ? productId : undefined;
-    const page = loadAdminReviewsPage(services, { visibility, productId: productFilter });
+    const page = loadAdminReviewsPage(
+      { reviewService: services.reviewService, productService: services.productService },
+      { visibility, productId: productFilter },
+    );
 
     return c.html(<AdminReviewListPage {...page} visibility={visibility} productFilter={productFilter} />);
   });
 
   reviews.get("/new", (c) => {
-    const { products } = loadAdminReviewForm(services);
+    const { products } = loadAdminReviewForm({ productService: services.productService });
     return c.html(<AdminReviewFormPage products={products} error={c.req.query("error")} />);
   });
 

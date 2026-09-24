@@ -15,12 +15,20 @@ export function createProduct(services: Services) {
 
     const requestedPage = Number.parseInt(c.req.query("page") ?? "1", 10);
     const page = Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
-    const data = loadProductPage(services, {
-      slug: c.req.param("slug"),
-      visitorId: c.get("visitorId"),
-      page,
-      customerSessionId: getCookie(c, "customer_session_id"),
-    });
+    const data = loadProductPage(
+      {
+        productService: services.productService,
+        authService: services.authService,
+        reviewService: services.reviewService,
+        cartService: services.cartService,
+      },
+      {
+        slug: c.req.param("slug"),
+        visitorId: c.get("visitorId"),
+        page,
+        customerSessionId: getCookie(c, "customer_session_id"),
+      },
+    );
 
     if (!data) {
       return c.html(<ProductNotFound cartCount={services.cartService.getCount(c.get("visitorId"))} />, 404);

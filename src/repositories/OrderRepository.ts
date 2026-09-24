@@ -25,12 +25,13 @@ export class SqliteOrderRepository implements IOrderRepository {
     const run = this.db.transaction(() => {
       const result = this.db
         .query(
-          `INSERT INTO orders (order_number, customer_id, email, name, address, city, postal_code, country, phone, notes, subtotal, total)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          `INSERT INTO orders (order_number, customer_id, visitor_session_id, email, name, address, city, postal_code, country, phone, notes, subtotal, total)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         )
         .run(
           orderNumber,
           customerId ?? null,
+          sessionId,
           input.email,
           input.name,
           input.address,

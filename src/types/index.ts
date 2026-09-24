@@ -61,6 +61,7 @@ export type Order = {
   id: number;
   order_number: string;
   customer_id: number | null;
+  visitor_session_id: string | null;
   status: string;
   email: string;
   name: string;

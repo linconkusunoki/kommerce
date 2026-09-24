@@ -38,14 +38,29 @@ export class OrderService {
   }
 
   getOrderByNumber(orderNumber: string): { order: Order; items: OrderItem[] } | null {
-    const order = this.orderRepo.findByNumber(orderNumber);
-    if (!order) return null;
-    const items = this.orderRepo.getItems(order.id);
-    return { order, items };
+    return this.getOrder(() => this.orderRepo.findByNumber(orderNumber));
+  }
+
+  getOrderByNumberForVisitor(
+    orderNumber: string,
+    visitorId: string,
+    customerId?: number,
+  ): { order: Order; items: OrderItem[] } | null {
+    const result = this.getOrder(() => this.orderRepo.findByNumber(orderNumber));
+    if (!result) return null;
+    if (result.order.customer_id !== null) {
+      return customerId === result.order.customer_id ? result : null;
+    }
+    if (result.order.visitor_session_id === visitorId) return result;
+    return null;
   }
 
   getOrderById(id: number | string): { order: Order; items: OrderItem[] } | null {
-    const order = this.orderRepo.findById(id);
+    return this.getOrder(() => this.orderRepo.findById(id));
+  }
+
+  private getOrder(find: () => Order | null): { order: Order; items: OrderItem[] } | null {
+    const order = find();
     if (!order) return null;
     const items = this.orderRepo.getItems(order.id);
     return { order, items };

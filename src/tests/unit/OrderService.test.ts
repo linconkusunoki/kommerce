@@ -108,6 +108,45 @@ describe("OrderService.getOrderByNumber", () => {
     expect(result?.order).toEqual(fakeOrder);
     expect(result?.items).toEqual(fakeItems);
   });
+
+  test("hides an order from unrelated visitors", () => {
+    const orderRepo = mockOrderRepo({
+      findByNumber: mock(
+        () => ({ id: 1, order_number: "KOM-123", customer_id: null, visitor_session_id: "visitor-1" }) as any,
+      ),
+    });
+    const service = new OrderService(orderRepo, mockCartRepo());
+
+    expect(service.getOrderByNumberForVisitor("KOM-123", "visitor-2")).toBeNull();
+  });
+
+  test("allows the visitor that placed a guest order", () => {
+    const fakeOrder = { id: 1, order_number: "KOM-123", customer_id: null, visitor_session_id: "visitor-1" } as any;
+    const fakeItems = [{ id: 1, product_name: "Shirt" }] as any;
+    const orderRepo = mockOrderRepo({ findByNumber: mock(() => fakeOrder), getItems: mock(() => fakeItems) });
+    const service = new OrderService(orderRepo, mockCartRepo());
+
+    expect(service.getOrderByNumberForVisitor("KOM-123", "visitor-1")?.items).toEqual(fakeItems);
+  });
+
+  test("allows the Customer who owns an order", () => {
+    const fakeOrder = { id: 1, order_number: "KOM-123", customer_id: 7, visitor_session_id: "other" } as any;
+    const orderRepo = mockOrderRepo({ findByNumber: mock(() => fakeOrder) });
+    const service = new OrderService(orderRepo, mockCartRepo());
+
+    expect(service.getOrderByNumberForVisitor("KOM-123", "visitor-1", 7)?.order).toEqual(fakeOrder);
+  });
+
+  test("does not use guest possession for a Customer-owned order", () => {
+    const orderRepo = mockOrderRepo({
+      findByNumber: mock(
+        () => ({ id: 1, order_number: "KOM-123", customer_id: 7, visitor_session_id: "visitor-1" }) as any,
+      ),
+    });
+    const service = new OrderService(orderRepo, mockCartRepo());
+
+    expect(service.getOrderByNumberForVisitor("KOM-123", "visitor-1")).toBeNull();
+  });
 });
 
 describe("OrderService.listOrders", () => {

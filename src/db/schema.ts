@@ -22,6 +22,9 @@ export function migrate() {
   if (!columns.some((column) => column.name === "customer_id")) {
     db.exec("ALTER TABLE orders ADD COLUMN customer_id INTEGER REFERENCES customer_users(id) ON DELETE SET NULL");
   }
+  if (!columns.some((column) => column.name === "visitor_session_id")) {
+    db.exec("ALTER TABLE orders ADD COLUMN visitor_session_id TEXT REFERENCES visitor_sessions(id) ON DELETE SET NULL");
+  }
   const productColumns = db.query("PRAGMA table_info(products)").all() as { name: string }[];
   if (!productColumns.some((column) => column.name === "image_alt_text")) {
     db.exec("ALTER TABLE products ADD COLUMN image_alt_text TEXT");

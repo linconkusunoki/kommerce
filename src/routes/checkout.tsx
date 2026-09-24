@@ -44,7 +44,12 @@ export function createCheckout(services: Services) {
 
   checkout.get("/order/:orderNumber", (c) => {
     const count = services.cartService.getCount(c.get("visitorId"));
-    const result = services.orderService.getOrderByNumber(c.req.param("orderNumber"));
+    const customer = getAuthenticatedCustomer(c, services.customerAuthService);
+    const result = services.orderService.getOrderByNumberForVisitor(
+      c.req.param("orderNumber"),
+      c.get("visitorId"),
+      customer?.id,
+    );
     if (!result) return c.html(<OrderNotFoundPage count={count} />, 404);
     return c.html(<OrderConfirmationPage {...result} count={count} />);
   });

@@ -95,6 +95,7 @@ export const MIGRATION_SQL = `
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     order_number TEXT NOT NULL UNIQUE,
     customer_id INTEGER REFERENCES customer_users(id) ON DELETE SET NULL,
+    visitor_session_id TEXT REFERENCES visitor_sessions(id) ON DELETE SET NULL,
     status TEXT NOT NULL DEFAULT 'pending',
     email TEXT NOT NULL,
     name TEXT NOT NULL,

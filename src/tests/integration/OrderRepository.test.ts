@@ -102,7 +102,7 @@ describe("OrderRepository.findByCustomer", () => {
     db.exec(
       "INSERT INTO customer_users (email, password_hash, display_name) VALUES ('account@example.com', 'hash', 'Customer')",
     );
-    const customerId = Number(db.query("SELECT last_insert_rowid() AS id").get() as { id: number });
+    const customerId = (db.query("SELECT last_insert_rowid() AS id").get() as { id: number }).id;
     repo.create(
       { ...validInput, email: "checkout@example.com" },
       [makeCartItem()],

@@ -1,8 +1,8 @@
 import type { Database } from "bun:sqlite";
 import type { AdminUser, AdminUserWithHash, Customer, CustomerWithHash } from "../types/index.ts";
-import type { IAuthRepository } from "./interfaces.ts";
+import type { IAdminAuthRepository, ICustomerAuthRepository } from "./interfaces.ts";
 
-export class SqliteAuthRepository implements IAuthRepository {
+export class SqliteAuthRepository implements IAdminAuthRepository, ICustomerAuthRepository {
   constructor(private db: Database) {}
 
   findUserByUsername(username: string): AdminUserWithHash | null {

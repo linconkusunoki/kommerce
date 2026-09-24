@@ -1,12 +1,12 @@
-import type { AuthService } from "../../services/AuthService.ts";
 import type { CartService } from "../../services/CartService.ts";
+import type { CustomerAuthService } from "../../services/CustomerAuthService.ts";
 import type { ProductService } from "../../services/ProductService.ts";
 import type { ReviewService } from "../../services/ReviewService.ts";
 
 export function loadProductPage(
   services: {
     productService: ProductService;
-    authService: AuthService;
+    customerAuthService: CustomerAuthService;
     reviewService: ReviewService;
     cartService: CartService;
   },
@@ -16,7 +16,7 @@ export function loadProductPage(
   if (!product) return null;
 
   const variants = services.productService.getVariants(product.id);
-  const customer = input.customerSessionId ? services.authService.getCustomerSession(input.customerSessionId) : null;
+  const customer = input.customerSessionId ? services.customerAuthService.getSession(input.customerSessionId) : null;
 
   const reviewPage = services.reviewService.getVisiblePage(product.id, input.page);
   const ratingSummary = services.reviewService.getRatingSummary(product.id);

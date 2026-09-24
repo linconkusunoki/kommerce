@@ -9,6 +9,7 @@ import type { AppEnv } from "../types/context.ts";
 
 export function createProduct(services: Services) {
   const product = new Hono<AppEnv>();
+  const customerAuth = requireCustomerAuth(services.customerAuthService);
 
   product.get("/products/:slug", (c) => {
     c.header("Cache-Control", "private, no-store");
@@ -18,7 +19,7 @@ export function createProduct(services: Services) {
     const data = loadProductPage(
       {
         productService: services.productService,
-        authService: services.authService,
+        customerAuthService: services.customerAuthService,
         reviewService: services.reviewService,
         cartService: services.cartService,
       },
@@ -41,7 +42,7 @@ export function createProduct(services: Services) {
     return c.html(<ProductPage data={data} added={c.req.query("added")} reviewError={c.req.query("review_error")} />);
   });
 
-  product.post("/products/:slug/reviews", requireCustomerAuth, async (c) => {
+  product.post("/products/:slug/reviews", customerAuth, async (c) => {
     const product = services.productService.getBySlug(c.req.param("slug"));
     if (!product) return c.notFound();
     const customer = c.get("customer");
@@ -62,7 +63,7 @@ export function createProduct(services: Services) {
     return c.redirect(`/products/${product.slug}`);
   });
 
-  product.post("/products/:slug/reviews/:reviewId/edit", requireCustomerAuth, async (c) => {
+  product.post("/products/:slug/reviews/:reviewId/edit", customerAuth, async (c) => {
     const product = services.productService.getBySlug(c.req.param("slug"));
     if (!product) return c.notFound();
     const customer = c.get("customer");
@@ -78,7 +79,7 @@ export function createProduct(services: Services) {
     return c.redirect(`/products/${product.slug}`);
   });
 
-  product.post("/products/:slug/reviews/:reviewId/delete", requireCustomerAuth, (c) => {
+  product.post("/products/:slug/reviews/:reviewId/delete", customerAuth, (c) => {
     const product = services.productService.getBySlug(c.req.param("slug"));
     if (!product) return c.notFound();
     services.reviewService.deleteCustomerReview(Number.parseInt(c.req.param("reviewId"), 10), c.get("customer").id);

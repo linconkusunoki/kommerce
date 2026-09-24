@@ -5,7 +5,7 @@ import { logger } from "hono/logger";
 import { compress } from "hono/compress";
 import { migrate } from "./db/schema.ts";
 import { seed } from "./db/seed.ts";
-import { requireAuth } from "./middleware/auth.ts";
+import { requireAdminAuth } from "./middleware/auth.ts";
 import { visitorSession } from "./middleware/visitor.ts";
 import { getDb } from "./db/schema.ts";
 import { AdminDashboardPage } from "./pages/admin/dashboard/AdminDashboardPage.tsx";
@@ -86,7 +86,7 @@ app.route("/admin", createAdminAuth(services));
 
 // Protected admin routes
 const admin = new Hono<AppEnv>();
-admin.use("*", requireAuth);
+admin.use("*", requireAdminAuth(services.adminAuthService));
 
 admin.get("/", (c) => {
   const stats = services.dashboardService.getStats();

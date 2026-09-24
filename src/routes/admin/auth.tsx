@@ -17,7 +17,7 @@ export function createAdminAuth(services: Services) {
     const username = body["username"] as string;
     const password = body["password"] as string;
 
-    const sessionId = await services.authService.login(username, password);
+    const sessionId = await services.adminAuthService.login(username, password);
     if (!sessionId) return c.redirect("/admin/login?error=Invalid+credentials");
 
     setCookie(c, "session_id", sessionId, {
@@ -33,7 +33,7 @@ export function createAdminAuth(services: Services) {
   auth.post("/logout", (c) => {
     const sessionId = getCookie(c, "session_id");
     if (sessionId) {
-      services.authService.logout(sessionId);
+      services.adminAuthService.logout(sessionId);
       deleteCookie(c, "session_id", { path: "/" });
     }
     return c.redirect("/admin/login");

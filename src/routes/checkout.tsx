@@ -8,14 +8,14 @@ export function createCheckout(services: Services) {
   const checkout = new Hono<AppEnv>();
 
   checkout.get("/checkout", (c) => {
-    const customer = getAuthenticatedCustomer(c);
+    const customer = getAuthenticatedCustomer(c, services.customerAuthService);
     const cart = services.cartService.getCart(c.get("visitorId"));
     if (cart.items.length === 0) return c.redirect("/cart");
     return c.html(<CheckoutPage {...cart} customer={customer} error={c.req.query("error")} />);
   });
 
   checkout.post("/checkout", async (c) => {
-    const customer = getAuthenticatedCustomer(c);
+    const customer = getAuthenticatedCustomer(c, services.customerAuthService);
     const body = await c.req.parseBody();
     const email = customer?.email ?? (body.email as string)?.trim();
     const name = (body.name as string)?.trim();

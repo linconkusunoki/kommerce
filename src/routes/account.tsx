@@ -15,7 +15,8 @@ const cookieOptions = { httpOnly: true, sameSite: "Lax" as const, path: "/", max
 
 export function createAccount(services: Services) {
   const account = new Hono<AppEnv>();
-  account.get("/account", requireCustomerAuth, (c) => c.redirect("/account/profile"));
+  const customerAuth = requireCustomerAuth(services.customerAuthService);
+  account.get("/account", customerAuth, (c) => c.redirect("/account/profile"));
 
   account.get("/account/login", (c) => {
     c.header("Cache-Control", "private, no-store");
@@ -23,7 +24,7 @@ export function createAccount(services: Services) {
   });
   account.post("/account/login", async (c) => {
     const body = await c.req.parseBody();
-    const sessionId = await services.authService.loginCustomer(String(body.email ?? ""), String(body.password ?? ""));
+    const sessionId = await services.customerAuthService.login(String(body.email ?? ""), String(body.password ?? ""));
     if (!sessionId) return c.redirect("/account/login?error=Invalid+credentials");
     setCookie(c, "customer_session_id", sessionId, cookieOptions);
     return c.redirect("/account/profile");
@@ -35,7 +36,7 @@ export function createAccount(services: Services) {
   });
   account.post("/account/register", async (c) => {
     const body = await c.req.parseBody();
-    const sessionId = await services.authService.registerCustomer(
+    const sessionId = await services.customerAuthService.register(
       String(body.email ?? ""),
       String(body.password ?? ""),
       String(body.display_name ?? ""),
@@ -45,31 +46,31 @@ export function createAccount(services: Services) {
     return c.redirect("/account/profile");
   });
 
-  account.use("/account/profile", requireCustomerAuth);
+  account.use("/account/profile", customerAuth);
   account.get("/account/profile", (c) => {
     c.header("Cache-Control", "private, no-store");
     return c.html(<ProfilePage customer={c.get("customer")} error={c.req.query("error")} />);
   });
-  account.get("/account/reviews", requireCustomerAuth, (c) => {
+  account.get("/account/reviews", customerAuth, (c) => {
     c.header("Cache-Control", "private, no-store");
     return c.html(<ReviewsPage reviews={services.reviewService.getCustomerReviews(c.get("customer").id)} />);
   });
-  account.get("/account/orders", requireCustomerAuth, (c) => {
+  account.get("/account/orders", customerAuth, (c) => {
     c.header("Cache-Control", "private, no-store");
     const customer = c.get("customer");
     return c.html(<OrdersPage orders={services.orderService.getCustomerOrders(customer.id, customer.email)} />);
   });
 
-  account.post("/account/profile", requireCustomerAuth, async (c) => {
+  account.post("/account/profile", customerAuth, async (c) => {
     const body = await c.req.parseBody();
-    if (!services.authService.updateCustomerDisplayName(c.get("customer").id, String(body.display_name ?? "")))
+    if (!services.customerAuthService.updateDisplayName(c.get("customer").id, String(body.display_name ?? "")))
       return c.redirect("/account/profile?error=Display+name+must+be+1+to+80+characters");
     return c.redirect("/account/profile");
   });
   account.post("/account/logout", (c) => {
     const sessionId = getCookie(c, "customer_session_id");
     if (sessionId) {
-      services.authService.logoutCustomer(sessionId);
+      services.customerAuthService.logout(sessionId);
       deleteCookie(c, "customer_session_id", { path: "/" });
     }
     return c.redirect("/account/login");

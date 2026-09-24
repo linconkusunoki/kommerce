@@ -102,11 +102,14 @@ export interface IOrderRepository {
   getItemsByOrderNumber(orderNumber: string): OrderItem[];
 }
 
-export interface IAuthRepository {
+export interface IAdminAuthRepository {
   findUserByUsername(username: string): AdminUserWithHash | null;
   createSession(userId: number): { sessionId: string; expiresAt: string };
   findSession(sessionId: string): (AdminUser & { expires_at: string }) | null;
   deleteSession(sessionId: string): void;
+}
+
+export interface ICustomerAuthRepository {
   findCustomerByEmail(email: string): CustomerWithHash | null;
   createCustomer(email: string, passwordHash: string, displayName: string): number;
   createCustomerSession(customerId: number): { sessionId: string; expiresAt: string };

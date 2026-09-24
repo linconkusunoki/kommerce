@@ -60,15 +60,21 @@ export interface IProductRepository {
   delete(id: number | string): void;
 }
 
-export interface IReviewRepository {
-  findByCustomer(customerId: number): CustomerReview[];
-  findAllForAdmin(visibility?: "all" | "visible" | "hidden", productId?: number): AdminReview[];
+export interface IReviewPublicRepository {
   findVisibleByProduct(productId: number, page: number, pageSize: number): ReviewPage;
   getRatingSummary(productId: number): RatingSummary;
+}
+
+export interface IReviewCustomerRepository {
+  findByCustomer(customerId: number): CustomerReview[];
   findCustomerReview(productId: number, customerId: number): ProductReview | null;
   createCustomerReview(input: CreateCustomerReviewInput): number;
   updateCustomerReview(id: number, customerId: number, rating: number, text: string | null): void;
   deleteCustomerReview(id: number, customerId: number): void;
+}
+
+export interface IReviewAdminRepository {
+  findAllForAdmin(visibility?: "all" | "visible" | "hidden", productId?: number): AdminReview[];
   setVisibility(id: number, visible: boolean): void;
   deleteReview(id: number): void;
   createAdminReview(input: CreateAdminReviewInput): number;

@@ -8,7 +8,7 @@ import type {
   RatingSummary,
   ReviewPage,
 } from "../types/index.ts";
-import type { IReviewRepository } from "./interfaces.ts";
+import type { IReviewAdminRepository, IReviewCustomerRepository, IReviewPublicRepository } from "./interfaces.ts";
 
 type RawReview = Omit<ProductReview, "visible" | "is_admin"> & { visible: number; is_admin: number };
 type RawAdminReview = Omit<AdminReview, "visible" | "is_admin"> & { visible: number; is_admin: number };
@@ -31,7 +31,9 @@ const reviewSelect = `
   LEFT JOIN customer_users c ON c.id = r.customer_id
   LEFT JOIN admin_users a ON a.id = r.admin_user_id`;
 
-export class SqliteReviewRepository implements IReviewRepository {
+export class SqliteReviewRepository
+  implements IReviewPublicRepository, IReviewCustomerRepository, IReviewAdminRepository
+{
   constructor(private db: Database) {}
 
   findByCustomer(customerId: number): CustomerReview[] {

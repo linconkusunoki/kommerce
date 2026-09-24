@@ -30,6 +30,7 @@ export type Services = {
 export function createContainer(db: Database): Services {
   const variantRepo = new SqliteVariantRepository(db);
   const cartRepo = new SqliteCartRepository(db);
+  const reviewRepo = new SqliteReviewRepository(db);
 
   return {
     cartService: new CartService(cartRepo, variantRepo),
@@ -38,7 +39,11 @@ export function createContainer(db: Database): Services {
     orderService: new OrderService(new SqliteOrderRepository(db), cartRepo),
     dashboardService: new DashboardService(new SqliteDashboardRepository(db)),
     authService: new AuthService(new SqliteAuthRepository(db)),
-    reviewService: new ReviewService(new SqliteReviewRepository(db)),
+    reviewService: new ReviewService({
+      publicReviews: reviewRepo,
+      customerReviews: reviewRepo,
+      adminReviews: reviewRepo,
+    }),
     objectStorage: new S3ObjectStorage(),
   };
 }

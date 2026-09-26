@@ -1,4 +1,4 @@
-const imageWidths = [320, 400, 500, 800];
+const cardImageWidths = [320, 400, 500, 640];
 
 function imageUrl(source: string, width: number): string {
   try {
@@ -12,12 +12,12 @@ function imageUrl(source: string, width: number): string {
   }
 }
 
-export function responsiveImage(source: string | null, sizes: string) {
+export function responsiveImage(source: string | null, sizes: string, widths = cardImageWidths) {
   if (!source) return null;
 
   return {
     src: imageUrl(source, 500),
-    srcSet: imageWidths.map((width) => `${imageUrl(source, width)} ${width}w`).join(", "),
+    srcSet: widths.map((width) => `${imageUrl(source, width)} ${width}w`).join(", "),
     sizes,
   };
 }

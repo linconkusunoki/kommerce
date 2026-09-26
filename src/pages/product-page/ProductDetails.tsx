@@ -3,7 +3,7 @@ import { responsiveImage } from "../../lib/image.ts";
 
 export function ProductDetails({ data }: { data: ProductPageData }) {
   const { product, variants, sizes, colors, onSale } = data;
-  const image = responsiveImage(product.image_url, "(max-width: 768px) calc(100vw - 3rem), 50vw");
+  const image = responsiveImage(product.image_url, "(max-width: 768px) calc(100vw - 3rem), 50vw", [320, 400, 500, 800]);
 
   return (
     <div class="product-detail">

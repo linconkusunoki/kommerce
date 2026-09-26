@@ -4,7 +4,6 @@ services:
     runtime: docker
     region: oregon
     plan: free
-    dockerCommand: "sh -c 'bun run db:migrate && bun run db:seed && exec bun run dist/index.js'"
     healthCheckPath: /health
     envVars:
       - key: DATABASE_URL

@@ -12,4 +12,4 @@ RUN bun build src/index.tsx --outdir dist --target bun --jsx-import-source hono/
 ENV NODE_ENV=production
 EXPOSE 3000
 
-CMD ["bun", "run", "dist/index.js"]
+CMD ["sh", "scripts/start-render.sh"]

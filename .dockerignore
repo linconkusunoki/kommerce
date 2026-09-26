@@ -1,0 +1,13 @@
+.env*
+.git
+.gitignore
+.terraform
+*.tfstate*
+node_modules
+dist
+coverage
+Dockerfile
+docker-compose.yml
+infra
+src/tests
+README.md

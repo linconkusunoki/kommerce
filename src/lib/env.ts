@@ -1,6 +1,11 @@
 export function validateEnv() {
-  const required = ["DATABASE_URL", "GEMINI_API_KEY"];
-  const missing = required.filter((name) => !process.env[name]?.trim());
+  const databaseVariables = ["DATABASE_HOST", "DATABASE_PORT", "DATABASE_NAME", "DATABASE_USER", "DATABASE_PASSWORD"];
+  const hasDatabaseUrl = Boolean(process.env.DATABASE_URL?.trim());
+  const missing = ["GEMINI_API_KEY"].filter((name) => !process.env[name]?.trim());
+
+  if (!hasDatabaseUrl) {
+    missing.push(...databaseVariables.filter((name) => !process.env[name]?.trim()));
+  }
 
   const s3 = {
     accessKeyId: process.env.S3_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID,
@@ -10,9 +15,11 @@ export function validateEnv() {
     publicUrl: process.env.S3_PUBLIC_URL,
   };
 
-  if (Object.values(s3).some((value) => value?.trim())) {
+  const s3Configured = [s3.accessKeyId, s3.secretAccessKey, s3.bucket, s3.publicUrl].some((value) => value?.trim());
+  if (s3Configured) {
     missing.push(
       ...Object.entries(s3)
+        .filter(([name]) => name !== "region")
         .filter(([, value]) => !value?.trim())
         .map(([name]) => `S3 ${name}`),
     );

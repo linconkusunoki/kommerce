@@ -46,6 +46,15 @@ app.use("/styles/*", async (c, next) => {
 app.use("/styles/*", serveStatic({ root: "./src" }));
 app.use("/public/*", serveStatic({ root: "./" }));
 
+app.get("/health", async (c) => {
+  try {
+    await db`SELECT 1`;
+    return c.json({ ok: true });
+  } catch {
+    return c.json({ ok: false }, 503);
+  }
+});
+
 // DOCTYPE for all HTML responses
 app.use("*", async (c, next) => {
   await next();

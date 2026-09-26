@@ -1,4 +1,4 @@
-import { db } from "./client.ts";
+import { db, getDatabaseUrl } from "./client.ts";
 import { MIGRATIONS } from "./migrations.ts";
 import type { SQL } from "bun";
 
@@ -17,8 +17,10 @@ export async function migrate(database: SQL = db) {
 }
 
 export function getDb() {
-  if (!process.env.DATABASE_URL) {
-    throw new Error("DATABASE_URL is required");
+  if (!getDatabaseUrl()) {
+    throw new Error(
+      "DATABASE_URL or DATABASE_HOST, DATABASE_PORT, DATABASE_NAME, DATABASE_USER, and DATABASE_PASSWORD are required",
+    );
   }
   return db;
 }

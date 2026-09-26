@@ -6,6 +6,11 @@ out
 dist
 *.tgz
 
+# local SQLite artifacts
+*.db
+*.db-wal
+*.db-shm
+
 # code coverage
 coverage
 *.lcov

@@ -113,7 +113,7 @@ app.route("/admin", admin);
 await new PostgresVisitorRepository(getDb()).deleteExpiredSessions();
 
 export default {
-  port: 3000,
+  port: Number(process.env.PORT ?? 3000),
   fetch: app.fetch,
 };
 

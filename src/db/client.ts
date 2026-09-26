@@ -1,7 +1,12 @@
 import { SQL } from "bun";
 
 export function getDatabaseUrl() {
-  if (process.env.DATABASE_URL) return process.env.DATABASE_URL;
+  if (process.env.DATABASE_URL) {
+    if (process.env.RENDER && !process.env.DATABASE_URL.includes("sslmode=")) {
+      return `${process.env.DATABASE_URL}${process.env.DATABASE_URL.includes("?") ? "&" : "?"}sslmode=require`;
+    }
+    return process.env.DATABASE_URL;
+  }
   if (process.env.TEST_DATABASE_URL) return process.env.TEST_DATABASE_URL;
 
   const { DATABASE_HOST, DATABASE_PORT, DATABASE_NAME, DATABASE_USER, DATABASE_PASSWORD } = process.env;

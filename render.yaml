@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: kommerce
+    runtime: docker
+    region: oregon
+    plan: free
+    dockerCommand: "sh -c 'bun run db:migrate && bun run db:seed && exec bun run dist/index.js'"
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: kommerce-db
+          property: connectionString
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: ADMIN_INITIAL_PASSWORD
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+
+databases:
+  - name: kommerce-db
+    region: oregon
+    plan: free
+    databaseName: kommerce
+    user: kommerce

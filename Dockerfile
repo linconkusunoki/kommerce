@@ -7,6 +7,7 @@ RUN bun install --frozen-lockfile --production
 
 COPY src ./src
 COPY scripts ./scripts
+COPY public ./public
 RUN bun build src/index.tsx --outdir dist --target bun --jsx-import-source hono/jsx
 
 ENV NODE_ENV=production

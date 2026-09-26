@@ -11,12 +11,12 @@ export function createProduct(services: Services) {
   const product = new Hono<AppEnv>();
   const customerAuth = requireCustomerAuth(services.customerAuthService);
 
-  product.get("/products/:slug", (c) => {
+  product.get("/products/:slug", async (c) => {
     c.header("Cache-Control", "private, no-store");
 
     const requestedPage = Number.parseInt(c.req.query("page") ?? "1", 10);
     const page = Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
-    const data = loadProductPage(
+    const data = await loadProductPage(
       {
         productService: services.productService,
         customerAuthService: services.customerAuthService,
@@ -32,7 +32,7 @@ export function createProduct(services: Services) {
     );
 
     if (!data) {
-      return c.html(<ProductNotFound cartCount={services.cartService.getCount(c.get("visitorId"))} />, 404);
+      return c.html(<ProductNotFound cartCount={await services.cartService.getCount(c.get("visitorId"))} />, 404);
     }
 
     if (page > data.reviewPage.totalPages) {
@@ -43,11 +43,11 @@ export function createProduct(services: Services) {
   });
 
   product.post("/products/:slug/reviews", customerAuth, async (c) => {
-    const product = services.productService.getBySlug(c.req.param("slug"));
+    const product = await services.productService.getBySlug(c.req.param("slug"));
     if (!product) return c.notFound();
     const customer = c.get("customer");
     const body = await c.req.parseBody();
-    const result = services.reviewService.createCustomerReview({
+    const result = await services.reviewService.createCustomerReview({
       productId: product.id,
       customerId: customer.id,
       rating: Number.parseInt(String(body.rating ?? ""), 10),
@@ -64,11 +64,11 @@ export function createProduct(services: Services) {
   });
 
   product.post("/products/:slug/reviews/:reviewId/edit", customerAuth, async (c) => {
-    const product = services.productService.getBySlug(c.req.param("slug"));
+    const product = await services.productService.getBySlug(c.req.param("slug"));
     if (!product) return c.notFound();
     const customer = c.get("customer");
     const body = await c.req.parseBody();
-    const updated = services.reviewService.updateCustomerReview(
+    const updated = await services.reviewService.updateCustomerReview(
       Number.parseInt(c.req.param("reviewId"), 10),
       product.id,
       customer.id,
@@ -79,10 +79,13 @@ export function createProduct(services: Services) {
     return c.redirect(`/products/${product.slug}`);
   });
 
-  product.post("/products/:slug/reviews/:reviewId/delete", customerAuth, (c) => {
-    const product = services.productService.getBySlug(c.req.param("slug"));
+  product.post("/products/:slug/reviews/:reviewId/delete", customerAuth, async (c) => {
+    const product = await services.productService.getBySlug(c.req.param("slug"));
     if (!product) return c.notFound();
-    services.reviewService.deleteCustomerReview(Number.parseInt(c.req.param("reviewId"), 10), c.get("customer").id);
+    await services.reviewService.deleteCustomerReview(
+      Number.parseInt(c.req.param("reviewId"), 10),
+      c.get("customer").id,
+    );
     return c.redirect(`/products/${product.slug}`);
   });
 

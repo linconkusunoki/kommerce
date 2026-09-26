@@ -4,7 +4,9 @@ import { z } from "zod";
 import { getDb } from "./db/schema.ts";
 import { createContainer } from "./lib/container.ts";
 import { ORDER_STATUSES } from "./types/index.ts";
+import { validateEnv } from "./lib/env.ts";
 
+validateEnv();
 const services = createContainer(getDb());
 
 const server = new McpServer({
@@ -19,7 +21,7 @@ server.tool(
   "Search products by name or description",
   { query: z.string().describe("Search term") },
   async ({ query }) => {
-    const results = services.productService.search(query);
+    const results = await services.productService.search(query);
     return {
       content: [{ type: "text", text: JSON.stringify(results, null, 2) }],
     };
@@ -27,7 +29,7 @@ server.tool(
 );
 
 server.tool("list_products", "List all products with stock information", {}, async () => {
-  const products = services.productService.getAll();
+  const products = await services.productService.getAll();
   return {
     content: [{ type: "text", text: JSON.stringify(products, null, 2) }],
   };
@@ -44,7 +46,7 @@ server.tool(
     if (!id && !slug) {
       return { content: [{ type: "text", text: "Provide either id or slug" }], isError: true };
     }
-    const product = slug ? services.productService.getBySlug(slug) : services.productService.getById(id!);
+    const product = slug ? await services.productService.getBySlug(slug) : await services.productService.getById(id!);
     if (!product) {
       return { content: [{ type: "text", text: "Product not found" }], isError: true };
     }
@@ -59,7 +61,7 @@ server.tool(
   "Get all variants (size/color/stock) for a product",
   { product_id: z.union([z.number(), z.string()]).describe("Product ID") },
   async ({ product_id }) => {
-    const variants = services.productService.getVariants(product_id);
+    const variants = await services.productService.getVariants(product_id);
     return {
       content: [{ type: "text", text: JSON.stringify(variants, null, 2) }],
     };
@@ -67,7 +69,7 @@ server.tool(
 );
 
 server.tool("get_featured_products", "Get featured/highlighted products", {}, async () => {
-  const products = services.productService.getFeatured();
+  const products = await services.productService.getFeatured();
   return {
     content: [{ type: "text", text: JSON.stringify(products, null, 2) }],
   };
@@ -76,7 +78,7 @@ server.tool("get_featured_products", "Get featured/highlighted products", {}, as
 // ─── Categories ────────────────────────────────────────────────────────────
 
 server.tool("list_categories", "List all product categories with product counts", {}, async () => {
-  const categories = services.categoryService.getAllWithCount();
+  const categories = await services.categoryService.getAllWithCount();
   return {
     content: [{ type: "text", text: JSON.stringify(categories, null, 2) }],
   };
@@ -87,7 +89,7 @@ server.tool(
   "Get all products in a specific category",
   { category_id: z.number().describe("Category ID") },
   async ({ category_id }) => {
-    const products = services.productService.getByCategory(category_id);
+    const products = await services.productService.getByCategory(category_id);
     return {
       content: [{ type: "text", text: JSON.stringify(products, null, 2) }],
     };
@@ -103,7 +105,7 @@ server.tool(
     status: z.enum(ORDER_STATUSES).optional().describe("Filter by order status"),
   },
   async ({ status }) => {
-    const result = services.orderService.listOrders(status);
+    const result = await services.orderService.listOrders(status);
     return {
       content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
     };
@@ -122,8 +124,8 @@ server.tool(
       return { content: [{ type: "text", text: "Provide either order_number or id" }], isError: true };
     }
     const result = order_number
-      ? services.orderService.getOrderByNumber(order_number)
-      : services.orderService.getOrderById(id!);
+      ? await services.orderService.getOrderByNumber(order_number)
+      : await services.orderService.getOrderById(id!);
     if (!result) {
       return { content: [{ type: "text", text: "Order not found" }], isError: true };
     }
@@ -141,7 +143,7 @@ server.tool(
     status: z.enum(ORDER_STATUSES).describe("New status"),
   },
   async ({ id, status }) => {
-    services.orderService.updateStatus(id, status);
+    await services.orderService.updateStatus(id, status);
     return {
       content: [{ type: "text", text: `Order ${id} updated to "${status}"` }],
     };
@@ -151,7 +153,7 @@ server.tool(
 // ─── Dashboard ─────────────────────────────────────────────────────────────
 
 server.tool("get_dashboard_stats", "Get store statistics: revenue, order counts, product counts", {}, async () => {
-  const stats = services.dashboardService.getStats();
+  const stats = await services.dashboardService.getStats();
   return {
     content: [{ type: "text", text: JSON.stringify(stats, null, 2) }],
   };

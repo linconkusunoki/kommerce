@@ -1,44 +1,21 @@
-import type { Database } from "bun:sqlite";
+import type { SQL } from "bun";
 import type { DashboardStats } from "../types/index.ts";
 import type { IDashboardRepository } from "./interfaces.ts";
 
-export class SqliteDashboardRepository implements IDashboardRepository {
-  constructor(private db: Database) {}
-
-  getStats(): DashboardStats {
-    const productCount = (this.db.query("SELECT COUNT(*) as count FROM products").get() as { count: number }).count;
-
-    const categoryCount = (this.db.query("SELECT COUNT(*) as count FROM categories").get() as { count: number }).count;
-
-    const orderCount = (this.db.query("SELECT COUNT(*) as count FROM orders").get() as { count: number }).count;
-
-    const pendingOrders = (
-      this.db.query("SELECT COUNT(*) as count FROM orders WHERE status = 'pending'").get() as {
-        count: number;
-      }
-    ).count;
-
-    const totalRevenue = (
-      this.db.query("SELECT COALESCE(SUM(total), 0) as revenue FROM orders WHERE status != 'cancelled'").get() as {
-        revenue: number;
-      }
-    ).revenue;
-
-    const monthRevenue = (
-      this.db
-        .query(
-          `SELECT COALESCE(SUM(total), 0) as revenue FROM orders
-           WHERE status != 'cancelled' AND strftime('%Y-%m', created_at) = strftime('%Y-%m', 'now')`,
-        )
-        .get() as { revenue: number }
-    ).revenue;
-
-    const avgOrder = (
-      this.db.query("SELECT COALESCE(AVG(total), 0) as avg FROM orders WHERE status != 'cancelled'").get() as {
-        avg: number;
-      }
-    ).avg;
-
-    return { productCount, categoryCount, orderCount, pendingOrders, totalRevenue, monthRevenue, avgOrder };
+export class PostgresDashboardRepository implements IDashboardRepository {
+  constructor(private db: SQL) {}
+  async getStats() {
+    const [row] = await this.db`SELECT
+      (SELECT COUNT(*)::int FROM products) AS "productCount", (SELECT COUNT(*)::int FROM categories) AS "categoryCount",
+      (SELECT COUNT(*)::int FROM orders) AS "orderCount", (SELECT COUNT(*)::int FROM orders WHERE status = 'pending') AS "pendingOrders",
+      COALESCE((SELECT SUM(total) FROM orders WHERE status != 'cancelled'), 0) AS "totalRevenue",
+      COALESCE((SELECT SUM(total) FROM orders WHERE status != 'cancelled' AND date_trunc('month', created_at::timestamp) = date_trunc('month', CURRENT_TIMESTAMP)), 0) AS "monthRevenue",
+      COALESCE((SELECT AVG(total) FROM orders WHERE status != 'cancelled'), 0) AS "avgOrder"`;
+    return {
+      ...row,
+      totalRevenue: Number(row.totalRevenue),
+      monthRevenue: Number(row.monthRevenue),
+      avgOrder: Number(row.avgOrder),
+    } as DashboardStats;
   }
 }

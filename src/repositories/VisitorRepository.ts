@@ -1,23 +1,24 @@
-import type { Database } from "bun:sqlite";
+import type { SQL } from "bun";
 import type { IVisitorRepository } from "./interfaces.ts";
 
-export class SqliteVisitorRepository implements IVisitorRepository {
-  constructor(private db: Database) {}
-
-  findSession(sessionId: string): { id: string } | null {
-    return this.db
-      .query("SELECT id FROM visitor_sessions WHERE id = ? AND expires_at > datetime('now')")
-      .get(sessionId) as { id: string } | null;
+export class PostgresVisitorRepository implements IVisitorRepository {
+  constructor(private db: SQL) {}
+  async findSession(sessionId: string) {
+    return (
+      ((
+        await this
+          .db`SELECT id FROM visitor_sessions WHERE id = ${sessionId} AND expires_at > to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')`
+      )[0] as { id: string }) ?? null
+    );
   }
-
-  createSession(): { id: string; expiresAt: string } {
+  async createSession() {
     const id = crypto.randomUUID();
-    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-    this.db.query("INSERT INTO visitor_sessions (id, expires_at) VALUES (?, ?)").run(id, expiresAt);
+    const expiresAt = new Date(Date.now() + 30 * 86400000).toISOString();
+    await this.db`INSERT INTO visitor_sessions (id, expires_at) VALUES (${id}, ${expiresAt})`;
     return { id, expiresAt };
   }
-
-  deleteExpiredSessions(): void {
-    this.db.query("DELETE FROM visitor_sessions WHERE expires_at <= datetime('now')").run();
+  async deleteExpiredSessions() {
+    await this
+      .db`DELETE FROM visitor_sessions WHERE expires_at <= to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')`;
   }
 }

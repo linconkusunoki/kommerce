@@ -51,26 +51,26 @@ export function createAccount(services: Services) {
     c.header("Cache-Control", "private, no-store");
     return c.html(<ProfilePage customer={c.get("customer")} error={c.req.query("error")} />);
   });
-  account.get("/account/reviews", customerAuth, (c) => {
+  account.get("/account/reviews", customerAuth, async (c) => {
     c.header("Cache-Control", "private, no-store");
-    return c.html(<ReviewsPage reviews={services.reviewService.getCustomerReviews(c.get("customer").id)} />);
+    return c.html(<ReviewsPage reviews={await services.reviewService.getCustomerReviews(c.get("customer").id)} />);
   });
-  account.get("/account/orders", customerAuth, (c) => {
+  account.get("/account/orders", customerAuth, async (c) => {
     c.header("Cache-Control", "private, no-store");
     const customer = c.get("customer");
-    return c.html(<OrdersPage orders={services.orderService.getCustomerOrders(customer.id, customer.email)} />);
+    return c.html(<OrdersPage orders={await services.orderService.getCustomerOrders(customer.id, customer.email)} />);
   });
 
   account.post("/account/profile", customerAuth, async (c) => {
     const body = await c.req.parseBody();
-    if (!services.customerAuthService.updateDisplayName(c.get("customer").id, String(body.display_name ?? "")))
+    if (!(await services.customerAuthService.updateDisplayName(c.get("customer").id, String(body.display_name ?? ""))))
       return c.redirect("/account/profile?error=Display+name+must+be+1+to+80+characters");
     return c.redirect("/account/profile");
   });
-  account.post("/account/logout", (c) => {
+  account.post("/account/logout", async (c) => {
     const sessionId = getCookie(c, "customer_session_id");
     if (sessionId) {
-      services.customerAuthService.logout(sessionId);
+      await services.customerAuthService.logout(sessionId);
       deleteCookie(c, "customer_session_id", { path: "/" });
     }
     return c.redirect("/account/login");

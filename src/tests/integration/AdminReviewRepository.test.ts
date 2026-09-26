@@ -1,50 +1,49 @@
 import { beforeEach, describe, expect, test } from "bun:test";
-import type { Database } from "bun:sqlite";
-import { SqliteReviewRepository } from "../../repositories/ReviewRepository.ts";
-import { createTestDb, seedCategory, seedProduct } from "./helpers.ts";
+import { PostgresReviewRepository } from "../../repositories/ReviewRepository.ts";
+import { createTestDb, postgresAvailable, seedCategory, seedProduct } from "./helpers.ts";
+import type { SQL } from "bun";
 
-let db: Database;
-let repo: SqliteReviewRepository;
+const integrationDescribe = postgresAvailable ? describe : describe.skip;
+let db: SQL;
+let repo: PostgresReviewRepository;
 let productId: number;
 
-beforeEach(() => {
-  db = createTestDb();
-  repo = new SqliteReviewRepository(db);
-  productId = seedProduct(db, seedCategory(db));
-  db.prepare("INSERT INTO admin_users (username, password_hash) VALUES (?, ?)").run("admin", "hash");
-  db.prepare("INSERT INTO customer_users (email, password_hash, display_name) VALUES (?, ?, ?)").run(
-    "customer@example.com",
-    "hash",
-    "Customer",
-  );
+beforeEach(async () => {
+  db = await createTestDb();
+  repo = new PostgresReviewRepository(db);
+  productId = await seedProduct(db, await seedCategory(db));
+  await db`INSERT INTO admin_users (username, password_hash) VALUES ('admin', 'hash')`;
+  await db`INSERT INTO customer_users (email, password_hash, display_name) VALUES ('customer@example.com', 'hash', 'Customer')`;
 });
 
-describe("SqliteReviewRepository admin review management", () => {
-  test("lists customer and admin reviews with filters", () => {
-    const customerId = Number((db.query("SELECT id FROM customer_users").get() as { id: number }).id);
-    const adminId = Number((db.query("SELECT id FROM admin_users").get() as { id: number }).id);
-    repo.createCustomerReview({ productId, customerId, rating: 4, text: "Customer text" });
-    repo.createAdminReview({ productId, adminUserId: adminId, rating: 5, text: "Admin text" });
+integrationDescribe("PostgresReviewRepository admin review management", () => {
+  test("lists customer and admin reviews with filters", async () => {
+    const [customer] = await db`SELECT id FROM customer_users`;
+    const [admin] = await db`SELECT id FROM admin_users`;
+    const customerId = Number(customer.id);
+    const adminId = Number(admin.id);
+    await repo.createCustomerReview({ productId, customerId, rating: 4, text: "Customer text" });
+    await repo.createAdminReview({ productId, adminUserId: adminId, rating: 5, text: "Admin text" });
 
-    expect(repo.findAllForAdmin()).toHaveLength(2);
-    expect(repo.findAllForAdmin(undefined, productId).find((review) => review.is_admin)).toMatchObject({
+    expect(await repo.findAllForAdmin()).toHaveLength(2);
+    expect((await repo.findAllForAdmin(undefined, productId)).find((review) => review.is_admin)).toMatchObject({
       author_name: "admin",
       is_admin: true,
       product_name: "Test Product",
     });
-    expect(repo.findAllForAdmin("visible")).toHaveLength(2);
-    repo.setVisibility(1, false);
-    expect(repo.findAllForAdmin("hidden")).toHaveLength(1);
-    expect(repo.findAllForAdmin("visible")).toHaveLength(1);
+    expect(await repo.findAllForAdmin("visible")).toHaveLength(2);
+    await repo.setVisibility(1, false);
+    expect(await repo.findAllForAdmin("hidden")).toHaveLength(1);
+    expect(await repo.findAllForAdmin("visible")).toHaveLength(1);
   });
 
-  test("hides and permanently deletes reviews", () => {
-    const customerId = Number((db.query("SELECT id FROM customer_users").get() as { id: number }).id);
-    const id = repo.createCustomerReview({ productId, customerId, rating: 3, text: null });
+  test("hides and permanently deletes reviews", async () => {
+    const [customer] = await db`SELECT id FROM customer_users`;
+    const id = await repo.createCustomerReview({ productId, customerId: Number(customer.id), rating: 3, text: null });
 
-    repo.setVisibility(id, false);
-    expect(repo.findAllForAdmin("hidden")[0]?.visible).toBe(false);
-    repo.deleteReview(id);
-    expect(repo.findAllForAdmin()).toEqual([]);
+    await repo.setVisibility(id, false);
+    expect((await repo.findAllForAdmin("hidden"))[0]?.visible).toBe(false);
+    await repo.deleteReview(id);
+    expect(await repo.findAllForAdmin()).toEqual([]);
   });
 });

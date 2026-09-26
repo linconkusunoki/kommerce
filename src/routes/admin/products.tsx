@@ -9,13 +9,13 @@ import type { AppEnv } from "../../types/context.ts";
 export function createAdminProducts(services: Services) {
   const products = new Hono<AppEnv>();
 
-  products.get("/", (c) => {
-    const { products: allProducts } = loadAdminProductsPage({ productService: services.productService });
+  products.get("/", async (c) => {
+    const { products: allProducts } = await loadAdminProductsPage({ productService: services.productService });
     return c.html(<ProductListPage products={allProducts} />);
   });
 
-  products.get("/new", (c) => {
-    const page = loadAdminProductForm({
+  products.get("/new", async (c) => {
+    const page = await loadAdminProductForm({
       categoryService: services.categoryService,
       productService: services.productService,
     });
@@ -25,7 +25,7 @@ export function createAdminProducts(services: Services) {
 
   products.post("/new", async (c) => {
     const body = await c.req.parseBody();
-    const categories = services.categoryService.getAll();
+    const categories = await services.categoryService.getAll();
     const name = (body["name"] as string).trim();
 
     try {
@@ -50,8 +50,8 @@ export function createAdminProducts(services: Services) {
     }
   });
 
-  products.get("/:id/edit", (c) => {
-    const page = loadAdminProductForm(
+  products.get("/:id/edit", async (c) => {
+    const page = await loadAdminProductForm(
       { categoryService: services.categoryService, productService: services.productService },
       c.req.param("id"),
     );
@@ -62,9 +62,9 @@ export function createAdminProducts(services: Services) {
   products.post("/:id/edit", async (c) => {
     const body = await c.req.parseBody();
     const id = c.req.param("id");
-    const categories = services.categoryService.getAll();
+    const categories = await services.categoryService.getAll();
     const name = (body["name"] as string).trim();
-    const product = services.productService.getById(id);
+    const product = await services.productService.getById(id);
     if (!product) return c.notFound();
     try {
       const image = body["image"] instanceof File && body["image"].size > 0 ? body["image"] : null;
@@ -84,7 +84,7 @@ export function createAdminProducts(services: Services) {
         image,
       );
     } catch (e: any) {
-      const page = loadAdminProductForm(
+      const page = await loadAdminProductForm(
         { categoryService: services.categoryService, productService: services.productService },
         id,
       );
@@ -99,7 +99,7 @@ export function createAdminProducts(services: Services) {
     const id = c.req.param("id");
     const body = await c.req.parseBody();
 
-    const product = services.productService.getById(id);
+    const product = await services.productService.getById(id);
     if (!product) return c.notFound();
 
     const size = (body["size"] as string).trim();
@@ -107,14 +107,14 @@ export function createAdminProducts(services: Services) {
     const stock = parseInt(body["stock"] as string) || 0;
     const sku = (body["sku"] as string)?.trim() || `${product.slug}-${slugify(size)}-${slugify(color)}`;
 
-    services.productService.addVariant(id, { size, color, stock, sku });
+    await services.productService.addVariant(id, { size, color, stock, sku });
     return c.redirect(`/admin/products/${id}/edit`);
   });
 
-  products.post("/:id/variants/:variantId/delete", (c) => {
+  products.post("/:id/variants/:variantId/delete", async (c) => {
     const id = c.req.param("id");
     const variantId = c.req.param("variantId");
-    services.productService.deleteVariant(variantId, id);
+    await services.productService.deleteVariant(variantId, id);
     return c.redirect(`/admin/products/${id}/edit`);
   });
 

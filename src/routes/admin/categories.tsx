@@ -12,8 +12,8 @@ import type { AppEnv } from "../../types/context.ts";
 export function createAdminCategories(services: Services) {
   const categories = new Hono<AppEnv>();
 
-  categories.get("/", (c) => {
-    const { categories: allCategories } = loadAdminCategoriesPage({ categoryService: services.categoryService });
+  categories.get("/", async (c) => {
+    const { categories: allCategories } = await loadAdminCategoriesPage({ categoryService: services.categoryService });
     return c.html(<CategoryListPage categories={allCategories} />);
   });
 
@@ -24,7 +24,7 @@ export function createAdminCategories(services: Services) {
     const name = (body["name"] as string).trim();
 
     try {
-      services.categoryService.create({
+      await services.categoryService.create({
         name,
         slug: slugify(name),
         description: (body["description"] as string) || null,
@@ -37,8 +37,8 @@ export function createAdminCategories(services: Services) {
     }
   });
 
-  categories.get("/:id/edit", (c) => {
-    const page = loadAdminCategoryForm({ categoryService: services.categoryService }, c.req.param("id"));
+  categories.get("/:id/edit", async (c) => {
+    const page = await loadAdminCategoryForm({ categoryService: services.categoryService }, c.req.param("id"));
     if (!page || !page.category) return c.notFound();
     return c.html(<CategoryForm category={page.category} />);
   });
@@ -49,7 +49,7 @@ export function createAdminCategories(services: Services) {
     const name = (body["name"] as string).trim();
 
     try {
-      services.categoryService.update(id, {
+      await services.categoryService.update(id, {
         name,
         slug: slugify(name),
         description: (body["description"] as string) || null,
@@ -58,13 +58,13 @@ export function createAdminCategories(services: Services) {
       });
       return c.redirect("/admin/categories");
     } catch (e: any) {
-      const page = loadAdminCategoryForm({ categoryService: services.categoryService }, id);
+      const page = await loadAdminCategoryForm({ categoryService: services.categoryService }, id);
       return c.html(<CategoryForm category={page?.category} error={e.message} />);
     }
   });
 
-  categories.post("/:id/delete", (c) => {
-    services.categoryService.delete(c.req.param("id"));
+  categories.post("/:id/delete", async (c) => {
+    await services.categoryService.delete(c.req.param("id"));
     return c.redirect("/admin/categories");
   });
 

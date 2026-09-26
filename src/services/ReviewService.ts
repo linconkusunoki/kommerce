@@ -50,55 +50,55 @@ export class ReviewService {
     return this.repos.customerReviews.findCustomerReview(productId, customerId);
   }
 
-  createCustomerReview(input: CreateCustomerReviewInput): ReviewCommandResult {
+  async createCustomerReview(input: CreateCustomerReviewInput): Promise<ReviewCommandResult> {
     const normalized = normalizeReview(input.rating, input.text);
     if (!normalized) return { ok: false, reason: "invalid" };
-    if (this.repos.customerReviews.findCustomerReview(input.productId, input.customerId)) {
+    if (await this.repos.customerReviews.findCustomerReview(input.productId, input.customerId)) {
       return { ok: false, reason: "duplicate" };
     }
     try {
-      return { ok: true, id: this.repos.customerReviews.createCustomerReview({ ...input, ...normalized }) };
+      return { ok: true, id: await this.repos.customerReviews.createCustomerReview({ ...input, ...normalized }) };
     } catch (error) {
-      if (this.repos.customerReviews.findCustomerReview(input.productId, input.customerId)) {
+      if (await this.repos.customerReviews.findCustomerReview(input.productId, input.customerId)) {
         return { ok: false, reason: "duplicate" };
       }
       throw error;
     }
   }
 
-  updateCustomerReview(
+  async updateCustomerReview(
     id: number,
     productId: number,
     customerId: number,
     rating: number,
     text: string | null,
-  ): ReviewCommandResult {
+  ): Promise<ReviewCommandResult> {
     const normalized = normalizeReview(rating, text);
-    const existing = this.repos.customerReviews.findCustomerReview(productId, customerId);
+    const existing = await this.repos.customerReviews.findCustomerReview(productId, customerId);
     if (!normalized) return { ok: false, reason: "invalid" };
     if (!existing) return { ok: false, reason: "not_found" };
     if (existing.id !== id) return { ok: false, reason: "not_owned" };
-    this.repos.customerReviews.updateCustomerReview(id, customerId, normalized.rating, normalized.text);
+    await this.repos.customerReviews.updateCustomerReview(id, customerId, normalized.rating, normalized.text);
     return { ok: true };
   }
 
-  deleteCustomerReview(id: number, customerId: number): void {
-    this.repos.customerReviews.deleteCustomerReview(id, customerId);
+  async deleteCustomerReview(id: number, customerId: number): Promise<void> {
+    await this.repos.customerReviews.deleteCustomerReview(id, customerId);
   }
 
-  hideReview(id: number): void {
-    this.repos.adminReviews.setVisibility(id, false);
+  async hideReview(id: number): Promise<void> {
+    await this.repos.adminReviews.setVisibility(id, false);
   }
 
-  showReview(id: number): void {
-    this.repos.adminReviews.setVisibility(id, true);
+  async showReview(id: number): Promise<void> {
+    await this.repos.adminReviews.setVisibility(id, true);
   }
 
-  deleteReview(id: number): void {
-    this.repos.adminReviews.deleteReview(id);
+  async deleteReview(id: number): Promise<void> {
+    await this.repos.adminReviews.deleteReview(id);
   }
 
-  createAdminReview(input: CreateAdminReviewInput): number | null {
+  async createAdminReview(input: CreateAdminReviewInput): Promise<number | null> {
     const normalized = normalizeReview(input.rating, input.text);
     if (!normalized) return null;
     return this.repos.adminReviews.createAdminReview({ ...input, ...normalized });

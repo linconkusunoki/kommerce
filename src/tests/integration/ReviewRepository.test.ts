@@ -1,31 +1,31 @@
 import { beforeEach, describe, expect, test } from "bun:test";
-import type { Database } from "bun:sqlite";
-import { SqliteProductRepository } from "../../repositories/ProductRepository.ts";
-import { SqliteReviewRepository } from "../../repositories/ReviewRepository.ts";
-import { createTestDb, seedCategory, seedProduct } from "./helpers.ts";
+import { PostgresProductRepository } from "../../repositories/ProductRepository.ts";
+import { PostgresReviewRepository } from "../../repositories/ReviewRepository.ts";
+import { createTestDb, postgresAvailable, seedCategory, seedProduct } from "./helpers.ts";
+import type { SQL } from "bun";
 
-let db: Database;
-let reviews: SqliteReviewRepository;
+const integrationDescribe = postgresAvailable ? describe : describe.skip;
+let db: SQL;
+let reviews: PostgresReviewRepository;
 let productId: number;
 
-beforeEach(() => {
-  db = createTestDb();
-  reviews = new SqliteReviewRepository(db);
-  productId = seedProduct(db, seedCategory(db));
+beforeEach(async () => {
+  db = await createTestDb();
+  reviews = new PostgresReviewRepository(db);
+  productId = await seedProduct(db, await seedCategory(db));
 });
 
-function seedCustomer(id: number): number {
-  const result = db
-    .prepare("INSERT INTO customer_users (email, password_hash, display_name) VALUES (?, ?, ?)")
-    .run(`customer-${id}@example.com`, "hash", `Customer ${id}`);
-  return Number(result.lastInsertRowid);
+async function seedCustomer(id: number) {
+  const [row] = await db`INSERT INTO customer_users (email, password_hash, display_name)
+    VALUES (${`customer-${id}@example.com`}, 'hash', ${`Customer ${id}`}) RETURNING id`;
+  return Number(row.id);
 }
 
-describe("SqliteReviewRepository", () => {
-  test("creates a customer review and returns it in public results", () => {
-    const customerId = seedCustomer(1);
-    const reviewId = reviews.createCustomerReview({ productId, customerId, rating: 5, text: "Great" });
-    const page = reviews.findVisibleByProduct(productId, 1, 10);
+integrationDescribe("PostgresReviewRepository", () => {
+  test("creates a customer review and returns it in public results", async () => {
+    const customerId = await seedCustomer(1);
+    const reviewId = await reviews.createCustomerReview({ productId, customerId, rating: 5, text: "Great" });
+    const page = await reviews.findVisibleByProduct(productId, 1, 10);
 
     expect(reviewId).toBeGreaterThan(0);
     expect(page.reviews[0]).toMatchObject({
@@ -37,11 +37,11 @@ describe("SqliteReviewRepository", () => {
     });
   });
 
-  test("lists all reviews for a customer with product links", () => {
-    const customerId = seedCustomer(1);
-    reviews.createCustomerReview({ productId, customerId, rating: 5, text: "Great" });
+  test("lists all reviews for a customer with product links", async () => {
+    const customerId = await seedCustomer(1);
+    await reviews.createCustomerReview({ productId, customerId, rating: 5, text: "Great" });
 
-    expect(reviews.findByCustomer(customerId)[0]).toMatchObject({
+    expect((await reviews.findByCustomer(customerId))[0]).toMatchObject({
       product_id: productId,
       product_name: "Test Product",
       product_slug: "test-product",
@@ -49,16 +49,16 @@ describe("SqliteReviewRepository", () => {
     });
   });
 
-  test("paginates and excludes hidden reviews from public data and aggregates", () => {
+  test("paginates and excludes hidden reviews from public data and aggregates", async () => {
     for (let i = 1; i <= 11; i++) {
-      const customerId = seedCustomer(i);
-      const reviewId = reviews.createCustomerReview({ productId, customerId, rating: (i % 5) + 1, text: null });
-      if (i === 1) db.prepare("UPDATE product_reviews SET visible = 0 WHERE id = ?").run(reviewId);
+      const customerId = await seedCustomer(i);
+      const reviewId = await reviews.createCustomerReview({ productId, customerId, rating: (i % 5) + 1, text: null });
+      if (i === 1) await db`UPDATE product_reviews SET visible = false WHERE id = ${reviewId}`;
     }
 
-    const firstPage = reviews.findVisibleByProduct(productId, 1, 10);
-    const secondPage = reviews.findVisibleByProduct(productId, 2, 10);
-    const summary = reviews.getRatingSummary(productId);
+    const firstPage = await reviews.findVisibleByProduct(productId, 1, 10);
+    const secondPage = await reviews.findVisibleByProduct(productId, 2, 10);
+    const summary = await reviews.getRatingSummary(productId);
 
     expect(firstPage.reviews).toHaveLength(10);
     expect(secondPage.reviews).toHaveLength(10);
@@ -67,14 +67,13 @@ describe("SqliteReviewRepository", () => {
     expect(summary.distribution[2]).toBe(2);
   });
 
-  test("enforces one active review per customer and cascades on product deletion", () => {
-    const customerId = seedCustomer(1);
-    reviews.createCustomerReview({ productId, customerId, rating: 3, text: null });
+  test("enforces one active review per customer and cascades on product deletion", async () => {
+    const customerId = await seedCustomer(1);
+    await reviews.createCustomerReview({ productId, customerId, rating: 3, text: null });
 
-    expect(() => reviews.createCustomerReview({ productId, customerId, rating: 4, text: null })).toThrow();
-    new SqliteProductRepository(db).delete(productId);
-    expect(db.query("SELECT COUNT(*) AS count FROM product_reviews WHERE product_id = ?").get(productId)).toEqual({
-      count: 0,
-    });
+    expect(reviews.createCustomerReview({ productId, customerId, rating: 4, text: null })).rejects.toThrow();
+    await new PostgresProductRepository(db).delete(productId);
+    const [row] = await db`SELECT COUNT(*)::int AS count FROM product_reviews WHERE product_id = ${productId}`;
+    expect(row.count).toBe(0);
   });
 });

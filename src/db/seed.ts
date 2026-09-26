@@ -1,11 +1,22 @@
-import { getDb, migrate } from "./schema.ts";
+import { db } from "./client.ts";
+
+async function ensureAdmin() {
+  const [existingAdmin] = await db`SELECT 1 FROM admin_users LIMIT 1`;
+  if (existingAdmin) return;
+
+  const password = process.env.ADMIN_INITIAL_PASSWORD;
+  if (!password) throw new Error("ADMIN_INITIAL_PASSWORD is required to seed the initial admin");
+
+  const passwordHash = await Bun.password.hash(password, { algorithm: "bcrypt" });
+  await db`INSERT INTO admin_users (username, password_hash) VALUES ('admin', ${passwordHash})`;
+}
 
 export async function seed() {
-  const db = getDb();
-  migrate();
-
-  const existingCategories = db.query("SELECT COUNT(*) as count FROM categories").get() as { count: number };
-  if (existingCategories.count > 0) return;
+  const [existingCategories] = await db`SELECT COUNT(*)::int AS count FROM categories`;
+  if (existingCategories.count > 0) {
+    await ensureAdmin();
+    return;
+  }
 
   const categories = [
     {
@@ -94,12 +105,9 @@ export async function seed() {
     },
   ];
 
-  const insertCategory = db.prepare(
-    "INSERT INTO categories (name, slug, description, sort_order, image_url) VALUES (?, ?, ?, ?, ?)",
-  );
-
   for (const cat of categories) {
-    insertCategory.run(cat.name, cat.slug, cat.description, cat.sort_order, cat.image_url);
+    await db`INSERT INTO categories (name, slug, description, sort_order, image_url)
+      VALUES (${cat.name}, ${cat.slug}, ${cat.description}, ${cat.sort_order}, ${cat.image_url})`;
   }
 
   const products = [
@@ -973,31 +981,13 @@ export async function seed() {
     },
   ];
 
-  const insertProduct = db.prepare(
-    "INSERT INTO products (name, slug, description, price, compare_at_price, category_id, featured, image_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-  );
-
-  const getCategoryId = db.prepare("SELECT id FROM categories WHERE slug = ?");
-
   for (const p of products) {
-    const cat = getCategoryId.get(p.category_slug) as { id: number };
-    insertProduct.run(
-      p.name,
-      p.slug,
-      p.description,
-      p.price,
-      p.compare_at_price ?? null,
-      cat.id,
-      p.featured,
-      p.image_url,
-    );
+    const [cat] = await db`SELECT id FROM categories WHERE slug = ${p.category_slug}`;
+    await db`INSERT INTO products (name, slug, description, price, compare_at_price, category_id, featured, image_url)
+      VALUES (${p.name}, ${p.slug}, ${p.description}, ${p.price}, ${p.compare_at_price ?? null}, ${cat.id}, ${!!p.featured}, ${p.image_url})`;
   }
 
-  const insertVariant = db.prepare(
-    "INSERT INTO product_variants (product_id, size, color, stock, sku) VALUES (?, ?, ?, ?, ?)",
-  );
-
-  const allProducts = db.query("SELECT id, slug FROM products").all() as { id: number; slug: string }[];
+  const allProducts = (await db`SELECT id, slug FROM products`) as { id: number; slug: string }[];
   const sizes = ["S", "M", "L", "XL"];
   const colors = ["Black", "White", "Navy"];
 
@@ -1006,13 +996,13 @@ export async function seed() {
       for (const color of colors) {
         const sku = `${product.slug}-${size}-${color}`.toLowerCase().replace(/\s+/g, "-");
         const stock = Math.floor(Math.random() * 20) + 5;
-        insertVariant.run(product.id, size, color, stock, sku);
+        await db`INSERT INTO product_variants (product_id, size, color, stock, sku)
+          VALUES (${product.id}, ${size}, ${color}, ${stock}, ${sku})`;
       }
     }
   }
 
-  const passwordHash = await Bun.password.hash("admin", { algorithm: "bcrypt" });
-  db.prepare("INSERT INTO admin_users (username, password_hash) VALUES (?, ?)").run("admin", passwordHash);
+  await ensureAdmin();
 
   console.log("Database seeded successfully.");
 }

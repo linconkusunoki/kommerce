@@ -5,25 +5,25 @@ import type { ObjectStorage } from "../../services/ObjectStorage.ts";
 
 function mockProductRepo(overrides: Partial<IProductRepository> = {}): IProductRepository {
   return {
-    findBySlug: mock(() => null),
-    findFeatured: mock(() => []),
-    findByCategory: mock(() => []),
-    search: mock(() => []),
-    findAll: mock(() => []),
-    findById: mock(() => null),
-    create: mock(() => 1),
-    update: mock(() => {}),
-    delete: mock(() => {}),
+    findBySlug: mock(async () => null),
+    findFeatured: mock(async () => []),
+    findByCategory: mock(async () => []),
+    search: mock(async () => []),
+    findAll: mock(async () => []),
+    findById: mock(async () => null),
+    create: mock(async () => 1),
+    update: mock(async () => {}),
+    delete: mock(async () => {}),
     ...overrides,
   };
 }
 
 function mockVariantRepo(overrides: Partial<IVariantRepository> = {}): IVariantRepository {
   return {
-    findByProduct: mock(() => []),
-    findByOptions: mock(() => null),
-    add: mock(() => {}),
-    delete: mock(() => {}),
+    findByProduct: mock(async () => []),
+    findByOptions: mock(async () => null),
+    add: mock(async () => {}),
+    delete: mock(async () => {}),
     ...overrides,
   };
 }
@@ -38,33 +38,33 @@ function mockStorage(overrides: Partial<ObjectStorage> = {}): ObjectStorage {
 }
 
 describe("ProductService.getBySlug", () => {
-  test("returns null when product not found", () => {
+  test("returns null when product not found", async () => {
     const service = new ProductService(mockProductRepo(), mockVariantRepo(), mockStorage());
-    expect(service.getBySlug("nonexistent")).toBeNull();
+    expect(await service.getBySlug("nonexistent")).toBeNull();
   });
 
-  test("returns product when found", () => {
+  test("returns product when found", async () => {
     const fakeProduct = { id: 1, name: "Shirt", slug: "shirt" } as any;
-    const repo = mockProductRepo({ findBySlug: mock(() => fakeProduct) });
+    const repo = mockProductRepo({ findBySlug: mock(async () => fakeProduct) });
     const service = new ProductService(repo, mockVariantRepo(), mockStorage());
-    expect(service.getBySlug("shirt")).toEqual(fakeProduct);
+    expect(await service.getBySlug("shirt")).toEqual(fakeProduct);
   });
 });
 
 describe("ProductService.search", () => {
-  test("delegates query to repo.search", () => {
-    const searchFn = mock(() => []);
+  test("delegates query to repo.search", async () => {
+    const searchFn = mock(async () => []);
     const service = new ProductService(mockProductRepo({ search: searchFn }), mockVariantRepo(), mockStorage());
-    service.search("blue shirt");
+    await service.search("blue shirt");
     expect(searchFn).toHaveBeenCalledWith("blue shirt");
   });
 });
 
 describe("ProductService.create", () => {
-  test("returns new product id", () => {
-    const repo = mockProductRepo({ create: mock(() => 42) });
+  test("returns new product id", async () => {
+    const repo = mockProductRepo({ create: mock(async () => 42) });
     const service = new ProductService(repo, mockVariantRepo(), mockStorage());
-    const id = service.create({
+    const id = await service.create({
       name: "Shirt",
       slug: "shirt",
       description: "",
@@ -79,19 +79,19 @@ describe("ProductService.create", () => {
 });
 
 describe("ProductService.getVariants", () => {
-  test("delegates to variantRepo.findByProduct", () => {
-    const findByProduct = mock(() => [{ id: 1, size: "M" }] as any);
+  test("delegates to variantRepo.findByProduct", async () => {
+    const findByProduct = mock(async () => [{ id: 1, size: "M" }] as any);
     const service = new ProductService(mockProductRepo(), mockVariantRepo({ findByProduct }), mockStorage());
-    service.getVariants(5);
+    await service.getVariants(5);
     expect(findByProduct).toHaveBeenCalledWith(5);
   });
 });
 
 describe("ProductService.deleteVariant", () => {
-  test("passes variantId and productId to variantRepo.delete", () => {
-    const deleteFn = mock(() => {});
+  test("passes variantId and productId to variantRepo.delete", async () => {
+    const deleteFn = mock(async () => {});
     const service = new ProductService(mockProductRepo(), mockVariantRepo({ delete: deleteFn }), mockStorage());
-    service.deleteVariant(3, 7);
+    await service.deleteVariant(3, 7);
     expect(deleteFn).toHaveBeenCalledWith(3, 7);
   });
 });
@@ -114,7 +114,7 @@ describe("ProductService image lifecycle", () => {
     const remove = mock(async () => {});
     const service = new ProductService(
       mockProductRepo({
-        create: mock(() => {
+        create: mock(async () => {
           throw new Error("database failed");
         }),
       }),
@@ -127,10 +127,13 @@ describe("ProductService image lifecycle", () => {
   });
 
   test("cleans up the old image after a successful replacement", async () => {
-    const update = mock(() => {});
+    const update = mock(async () => {});
     const remove = mock(async () => {});
     const service = new ProductService(
-      mockProductRepo({ findById: mock(() => ({ id: 1, image_url: "https://cdn.test/products/old" }) as any), update }),
+      mockProductRepo({
+        findById: mock(async () => ({ id: 1, image_url: "https://cdn.test/products/old" }) as any),
+        update,
+      }),
       mockVariantRepo(),
       mockStorage({ delete: remove }),
     );
@@ -143,7 +146,7 @@ describe("ProductService image lifecycle", () => {
   test("deletes the stored image with the product", async () => {
     const remove = mock(async () => {});
     const service = new ProductService(
-      mockProductRepo({ findById: mock(() => ({ id: 1, image_url: "https://cdn.test/products/old" }) as any) }),
+      mockProductRepo({ findById: mock(async () => ({ id: 1, image_url: "https://cdn.test/products/old" }) as any) }),
       mockVariantRepo(),
       mockStorage({ delete: remove }),
     );

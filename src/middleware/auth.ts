@@ -8,7 +8,7 @@ export function requireAdminAuth(auth: AdminAuthService) {
     const sessionId = getCookie(c, "session_id");
     if (!sessionId) return c.redirect("/admin/login");
 
-    const session = auth.getSession(sessionId);
+    const session = await auth.getSession(sessionId);
     if (!session) return c.redirect("/admin/login");
 
     c.set("adminUser", { id: session.id, username: session.username });

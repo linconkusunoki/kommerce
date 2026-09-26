@@ -5,14 +5,14 @@ import type { AppEnv } from "../types/context.ts";
 
 export function createCategory(services: Services) {
   const category = new Hono<AppEnv>();
-  category.get("/categories/:slug", (c) => {
-    const cartCount = services.cartService.getCount(c.get("visitorId"));
-    const found = services.categoryService.getBySlug(c.req.param("slug"));
+  category.get("/categories/:slug", async (c) => {
+    const cartCount = await services.cartService.getCount(c.get("visitorId"));
+    const found = await services.categoryService.getBySlug(c.req.param("slug"));
     if (!found) return c.html(<CategoryNotFound cartCount={cartCount} />, 404);
     return c.html(
       <CategoryPage
         category={found}
-        products={services.productService.getByCategory(found.id)}
+        products={await services.productService.getByCategory(found.id)}
         cartCount={cartCount}
       />,
     );

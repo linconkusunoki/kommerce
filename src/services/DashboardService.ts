@@ -4,7 +4,7 @@ import type { DashboardStats } from "../types/index.ts";
 export class DashboardService {
   constructor(private repo: IDashboardRepository) {}
 
-  getStats(): DashboardStats {
+  async getStats(): Promise<DashboardStats> {
     return this.repo.getStats();
   }
 }

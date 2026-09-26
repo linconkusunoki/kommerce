@@ -1,50 +1,32 @@
-import type { Database } from "bun:sqlite";
+import type { SQL } from "bun";
 import type { Category, CategoryWithCount, CreateCategoryInput, UpdateCategoryInput } from "../types/index.ts";
 import type { ICategoryRepository } from "./interfaces.ts";
 
-export class SqliteCategoryRepository implements ICategoryRepository {
-  constructor(private db: Database) {}
+export class PostgresCategoryRepository implements ICategoryRepository {
+  constructor(private db: SQL) {}
 
-  findAll(): Category[] {
-    return this.db.query("SELECT * FROM categories ORDER BY sort_order").all() as Category[];
+  findAll = async () => (await this.db`SELECT * FROM categories ORDER BY sort_order`) as Category[];
+  findBySlug = async (slug: string) =>
+    ((await this.db`SELECT * FROM categories WHERE slug = ${slug}`)[0] as Category) ?? null;
+  findById = async (id: number | string) =>
+    ((await this.db`SELECT * FROM categories WHERE id = ${id}`)[0] as Category) ?? null;
+  findAllWithCount = async () =>
+    (await this.db`
+    SELECT c.*, COUNT(p.id)::int AS product_count
+    FROM categories c LEFT JOIN products p ON p.category_id = c.id
+    GROUP BY c.id ORDER BY c.sort_order`) as CategoryWithCount[];
+
+  async create(data: CreateCategoryInput) {
+    await this.db`INSERT INTO categories (name, slug, description, image_url, sort_order)
+      VALUES (${data.name}, ${data.slug}, ${data.description}, ${data.image_url}, ${data.sort_order})`;
   }
 
-  findBySlug(slug: string): Category | null {
-    return this.db.query("SELECT * FROM categories WHERE slug = ?").get(slug) as Category | null;
+  async update(id: number | string, data: UpdateCategoryInput) {
+    await this.db`UPDATE categories SET name = ${data.name}, slug = ${data.slug}, description = ${data.description},
+      image_url = ${data.image_url}, sort_order = ${data.sort_order} WHERE id = ${id}`;
   }
 
-  findById(id: number | string): Category | null {
-    return this.db.query("SELECT * FROM categories WHERE id = ?").get(id) as Category | null;
-  }
-
-  findAllWithCount(): CategoryWithCount[] {
-    return this.db
-      .query(
-        `SELECT c.*, (SELECT COUNT(*) FROM products p WHERE p.category_id = c.id) as product_count
-         FROM categories c ORDER BY c.sort_order`,
-      )
-      .all() as CategoryWithCount[];
-  }
-
-  create(data: CreateCategoryInput): void {
-    this.db
-      .prepare(
-        `INSERT INTO categories (name, slug, description, image_url, sort_order)
-         VALUES (?, ?, ?, ?, ?)`,
-      )
-      .run(data.name, data.slug, data.description, data.image_url, data.sort_order);
-  }
-
-  update(id: number | string, data: UpdateCategoryInput): void {
-    this.db
-      .prepare(
-        `UPDATE categories SET name = ?, slug = ?, description = ?, image_url = ?, sort_order = ?
-         WHERE id = ?`,
-      )
-      .run(data.name, data.slug, data.description, data.image_url, data.sort_order, id);
-  }
-
-  delete(id: number | string): void {
-    this.db.prepare("DELETE FROM categories WHERE id = ?").run(id);
+  async delete(id: number | string) {
+    await this.db`DELETE FROM categories WHERE id = ${id}`;
   }
 }

@@ -5,8 +5,11 @@
   "private": true,
   "scripts": {
     "dev": "bun run src/index.tsx",
+    "db:migrate": "bun run scripts/migrate.ts",
+    "db:seed": "bun run scripts/seed.ts",
     "validate-env": "bun run scripts/validate-env.ts",
-    "build": "bun run format:check && bun run validate-env && bun build src/index.tsx --outdir dist --target bun",
+    "typecheck": "bunx tsc --noEmit",
+    "build": "bun run format:check && bun build src/index.tsx --outdir dist --target bun",
     "test": "bun test src/tests",
     "mcp": "bun run src/mcp.ts",
     "format": "prettier . --write",

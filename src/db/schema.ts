@@ -1,32 +1,24 @@
-import { Database } from "bun:sqlite";
-import { join } from "path";
-import { MIGRATION_SQL } from "./migrations.ts";
+import { db } from "./client.ts";
+import { MIGRATIONS } from "./migrations.ts";
+import type { SQL } from "bun";
 
-const DB_PATH = join(import.meta.dir, "../../kommerce.db");
-
-let _db: Database | null = null;
-
-export function getDb(): Database {
-  if (!_db) {
-    _db = new Database(DB_PATH);
-    _db.exec("PRAGMA journal_mode = WAL");
-    _db.exec("PRAGMA foreign_keys = ON");
-  }
-  return _db;
+export async function migrate(database: SQL = db) {
+  await database.begin(async (tx) => {
+    await tx`SELECT pg_advisory_xact_lock(hashtext('kommerce:migrations'))`;
+    await tx`CREATE TABLE IF NOT EXISTS schema_migrations (id TEXT PRIMARY KEY, applied_at TEXT NOT NULL DEFAULT to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))`;
+    for (const migration of MIGRATIONS) {
+      const [applied] = await tx`SELECT 1 FROM schema_migrations WHERE id = ${migration.id}`;
+      if (!applied) {
+        await tx.unsafe(migration.sql);
+        await tx`INSERT INTO schema_migrations (id) VALUES (${migration.id})`;
+      }
+    }
+  });
 }
 
-export function migrate() {
-  const db = getDb();
-  db.exec(MIGRATION_SQL);
-  const columns = db.query("PRAGMA table_info(orders)").all() as { name: string }[];
-  if (!columns.some((column) => column.name === "customer_id")) {
-    db.exec("ALTER TABLE orders ADD COLUMN customer_id INTEGER REFERENCES customer_users(id) ON DELETE SET NULL");
+export function getDb() {
+  if (!process.env.DATABASE_URL) {
+    throw new Error("DATABASE_URL is required");
   }
-  if (!columns.some((column) => column.name === "visitor_session_id")) {
-    db.exec("ALTER TABLE orders ADD COLUMN visitor_session_id TEXT REFERENCES visitor_sessions(id) ON DELETE SET NULL");
-  }
-  const productColumns = db.query("PRAGMA table_info(products)").all() as { name: string }[];
-  if (!productColumns.some((column) => column.name === "image_alt_text")) {
-    db.exec("ALTER TABLE products ADD COLUMN image_alt_text TEXT");
-  }
+  return db;
 }

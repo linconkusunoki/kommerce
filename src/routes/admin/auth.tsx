@@ -30,10 +30,10 @@ export function createAdminAuth(services: Services) {
     return c.redirect("/admin");
   });
 
-  auth.post("/logout", (c) => {
+  auth.post("/logout", async (c) => {
     const sessionId = getCookie(c, "session_id");
     if (sessionId) {
-      services.adminAuthService.logout(sessionId);
+      await services.adminAuthService.logout(sessionId);
       deleteCookie(c, "session_id", { path: "/" });
     }
     return c.redirect("/admin/login");

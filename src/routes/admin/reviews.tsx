@@ -8,7 +8,7 @@ import type { AppEnv } from "../../types/context.ts";
 export function createAdminReviews(services: Services) {
   const reviews = new Hono<AppEnv>();
 
-  reviews.get("/", (c) => {
+  reviews.get("/", async (c) => {
     const requestedVisibility = c.req.query("visibility") || "all";
     const visibility = ["all", "visible", "hidden"].includes(requestedVisibility)
       ? (requestedVisibility as "all" | "visible" | "hidden")
@@ -16,7 +16,7 @@ export function createAdminReviews(services: Services) {
     const productIdValue = c.req.query("product_id") || "";
     const productId = Number.parseInt(productIdValue, 10);
     const productFilter = Number.isInteger(productId) && productId > 0 ? productId : undefined;
-    const page = loadAdminReviewsPage(
+    const page = await loadAdminReviewsPage(
       { reviewService: services.reviewService, productService: services.productService },
       { visibility, productId: productFilter },
     );
@@ -24,18 +24,18 @@ export function createAdminReviews(services: Services) {
     return c.html(<AdminReviewListPage {...page} visibility={visibility} productFilter={productFilter} />);
   });
 
-  reviews.get("/new", (c) => {
-    const { products } = loadAdminReviewForm({ productService: services.productService });
+  reviews.get("/new", async (c) => {
+    const { products } = await loadAdminReviewForm({ productService: services.productService });
     return c.html(<AdminReviewFormPage products={products} error={c.req.query("error")} />);
   });
 
   reviews.post("/new", async (c) => {
     const body = await c.req.parseBody();
     const productId = Number.parseInt(String(body.product_id ?? ""), 10);
-    if (!Number.isInteger(productId) || !services.productService.getById(productId)) {
+    if (!Number.isInteger(productId) || !(await services.productService.getById(productId))) {
       return c.redirect("/admin/reviews/new?error=Select+a+valid+product+and+rating");
     }
-    const reviewId = services.reviewService.createAdminReview({
+    const reviewId = await services.reviewService.createAdminReview({
       productId,
       adminUserId: c.get("adminUser").id,
       rating: Number.parseInt(String(body.rating ?? ""), 10),
@@ -45,18 +45,18 @@ export function createAdminReviews(services: Services) {
     return c.redirect("/admin/reviews");
   });
 
-  reviews.post("/:id/hide", (c) => {
-    services.reviewService.hideReview(Number.parseInt(c.req.param("id"), 10));
+  reviews.post("/:id/hide", async (c) => {
+    await services.reviewService.hideReview(Number.parseInt(c.req.param("id"), 10));
     return c.redirect("/admin/reviews");
   });
 
-  reviews.post("/:id/show", (c) => {
-    services.reviewService.showReview(Number.parseInt(c.req.param("id"), 10));
+  reviews.post("/:id/show", async (c) => {
+    await services.reviewService.showReview(Number.parseInt(c.req.param("id"), 10));
     return c.redirect("/admin/reviews");
   });
 
-  reviews.post("/:id/delete", (c) => {
-    services.reviewService.deleteReview(Number.parseInt(c.req.param("id"), 10));
+  reviews.post("/:id/delete", async (c) => {
+    await services.reviewService.deleteReview(Number.parseInt(c.req.param("id"), 10));
     return c.redirect("/admin/reviews");
   });
 

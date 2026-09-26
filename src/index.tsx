@@ -3,14 +3,12 @@ import { csrf } from "hono/csrf";
 import { serveStatic } from "hono/bun";
 import { logger } from "hono/logger";
 import { compress } from "hono/compress";
-import { migrate } from "./db/schema.ts";
-import { seed } from "./db/seed.ts";
 import { requireAdminAuth } from "./middleware/auth.ts";
 import { visitorSession } from "./middleware/visitor.ts";
 import { getDb } from "./db/schema.ts";
 import { AdminDashboardPage } from "./pages/admin/dashboard/AdminDashboardPage.tsx";
 import { createContainer } from "./lib/container.ts";
-import { SqliteVisitorRepository } from "./repositories/VisitorRepository.ts";
+import { PostgresVisitorRepository } from "./repositories/VisitorRepository.ts";
 import { createHome } from "./routes/home.tsx";
 import { createProduct } from "./routes/product.tsx";
 import { createCart } from "./routes/cart.tsx";
@@ -26,7 +24,9 @@ import { createAdminReviews } from "./routes/admin/reviews.tsx";
 import { createChatRoute } from "./routes/chat.ts";
 import { createChat } from "./chatbot.ts";
 import type { AppEnv } from "./types/context.ts";
+import { validateEnv } from "./lib/env.ts";
 
+validateEnv();
 const app = new Hono<AppEnv>();
 const db = getDb();
 const services = createContainer(db);
@@ -88,8 +88,8 @@ app.route("/admin", createAdminAuth(services));
 const admin = new Hono<AppEnv>();
 admin.use("*", requireAdminAuth(services.adminAuthService));
 
-admin.get("/", (c) => {
-  const stats = services.dashboardService.getStats();
+admin.get("/", async (c) => {
+  const stats = await services.dashboardService.getStats();
   return c.html(<AdminDashboardPage stats={stats} />);
 });
 
@@ -100,12 +100,8 @@ admin.route("/reviews", createAdminReviews(services));
 
 app.route("/admin", admin);
 
-// Init database and start
-migrate();
-await seed();
-
 // Clean up expired visitor sessions on startup
-new SqliteVisitorRepository(getDb()).deleteExpiredSessions();
+await new PostgresVisitorRepository(getDb()).deleteExpiredSessions();
 
 export default {
   port: 3000,

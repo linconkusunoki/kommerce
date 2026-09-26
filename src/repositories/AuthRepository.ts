@@ -1,76 +1,60 @@
-import type { Database } from "bun:sqlite";
+import type { SQL } from "bun";
 import type { AdminUser, AdminUserWithHash, Customer, CustomerWithHash } from "../types/index.ts";
 import type { IAdminAuthRepository, ICustomerAuthRepository } from "./interfaces.ts";
 
-export class SqliteAuthRepository implements IAdminAuthRepository, ICustomerAuthRepository {
-  constructor(private db: Database) {}
-
-  findUserByUsername(username: string): AdminUserWithHash | null {
-    return this.db.query("SELECT * FROM admin_users WHERE username = ?").get(username) as AdminUserWithHash | null;
+export class PostgresAuthRepository implements IAdminAuthRepository, ICustomerAuthRepository {
+  constructor(private db: SQL) {}
+  async findUserByUsername(username: string) {
+    return ((await this.db`SELECT * FROM admin_users WHERE username = ${username}`)[0] as AdminUserWithHash) ?? null;
   }
-
-  createSession(userId: number): { sessionId: string; expiresAt: string } {
+  async createSession(userId: number) {
     const sessionId = crypto.randomUUID();
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-    this.db
-      .prepare("INSERT INTO sessions (id, admin_user_id, expires_at) VALUES (?, ?, ?)")
-      .run(sessionId, userId, expiresAt);
+    const expiresAt = new Date(Date.now() + 7 * 86400000).toISOString();
+    await this.db`INSERT INTO sessions (id, admin_user_id, expires_at) VALUES (${sessionId}, ${userId}, ${expiresAt})`;
     return { sessionId, expiresAt };
   }
-
-  findSession(sessionId: string): (AdminUser & { expires_at: string }) | null {
-    return this.db
-      .query(
-        `SELECT a.id, a.username, s.expires_at
-         FROM sessions s
-         JOIN admin_users a ON s.admin_user_id = a.id
-         WHERE s.id = ? AND s.expires_at > datetime('now')`,
-      )
-      .get(sessionId) as (AdminUser & { expires_at: string }) | null;
+  async findSession(sessionId: string) {
+    return (
+      ((
+        await this
+          .db`SELECT a.id, a.username, s.expires_at FROM sessions s JOIN admin_users a ON s.admin_user_id = a.id WHERE s.id = ${sessionId} AND s.expires_at > to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')`
+      )[0] as AdminUser & { expires_at: string }) ?? null
+    );
   }
-
-  deleteSession(sessionId: string): void {
-    this.db.prepare("DELETE FROM sessions WHERE id = ?").run(sessionId);
+  async deleteSession(sessionId: string) {
+    await this.db`DELETE FROM sessions WHERE id = ${sessionId}`;
   }
-
-  findCustomerByEmail(email: string): CustomerWithHash | null {
-    return this.db
-      .query("SELECT id, email, password_hash, display_name FROM customer_users WHERE email = ?")
-      .get(email) as CustomerWithHash | null;
+  async findCustomerByEmail(email: string) {
+    return (
+      ((
+        await this.db`SELECT id, email, password_hash, display_name FROM customer_users WHERE email = ${email}`
+      )[0] as CustomerWithHash) ?? null
+    );
   }
-
-  createCustomer(email: string, passwordHash: string, displayName: string): number {
-    const result = this.db
-      .prepare("INSERT INTO customer_users (email, password_hash, display_name) VALUES (?, ?, ?)")
-      .run(email, passwordHash, displayName);
-    return Number(result.lastInsertRowid);
+  async createCustomer(email: string, passwordHash: string, displayName: string) {
+    const [row] = await this
+      .db`INSERT INTO customer_users (email, password_hash, display_name) VALUES (${email}, ${passwordHash}, ${displayName}) RETURNING id`;
+    return Number(row.id);
   }
-
-  createCustomerSession(customerId: number): { sessionId: string; expiresAt: string } {
+  async createCustomerSession(customerId: number) {
     const sessionId = crypto.randomUUID();
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-    this.db
-      .prepare("INSERT INTO customer_sessions (id, customer_id, expires_at) VALUES (?, ?, ?)")
-      .run(sessionId, customerId, expiresAt);
+    const expiresAt = new Date(Date.now() + 7 * 86400000).toISOString();
+    await this
+      .db`INSERT INTO customer_sessions (id, customer_id, expires_at) VALUES (${sessionId}, ${customerId}, ${expiresAt})`;
     return { sessionId, expiresAt };
   }
-
-  findCustomerSession(sessionId: string): (Customer & { expires_at: string }) | null {
-    return this.db
-      .query(
-        `SELECT c.id, c.email, c.display_name, s.expires_at
-         FROM customer_sessions s
-         JOIN customer_users c ON s.customer_id = c.id
-         WHERE s.id = ? AND s.expires_at > datetime('now')`,
-      )
-      .get(sessionId) as (Customer & { expires_at: string }) | null;
+  async findCustomerSession(sessionId: string) {
+    return (
+      ((
+        await this
+          .db`SELECT c.id, c.email, c.display_name, s.expires_at FROM customer_sessions s JOIN customer_users c ON s.customer_id = c.id WHERE s.id = ${sessionId} AND s.expires_at > to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')`
+      )[0] as Customer & { expires_at: string }) ?? null
+    );
   }
-
-  updateCustomerDisplayName(customerId: number, displayName: string): void {
-    this.db.prepare("UPDATE customer_users SET display_name = ? WHERE id = ?").run(displayName, customerId);
+  async updateCustomerDisplayName(customerId: number, displayName: string) {
+    await this.db`UPDATE customer_users SET display_name = ${displayName} WHERE id = ${customerId}`;
   }
-
-  deleteCustomerSession(sessionId: string): void {
-    this.db.prepare("DELETE FROM customer_sessions WHERE id = ?").run(sessionId);
+  async deleteCustomerSession(sessionId: string) {
+    await this.db`DELETE FROM customer_sessions WHERE id = ${sessionId}`;
   }
 }

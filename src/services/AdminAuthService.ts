@@ -5,16 +5,16 @@ export class AdminAuthService {
   constructor(private repo: IAdminAuthRepository) {}
 
   async login(username: string, password: string): Promise<string | null> {
-    const user = this.repo.findUserByUsername(username);
+    const user = await this.repo.findUserByUsername(username);
     if (!user || !(await Bun.password.verify(password, user.password_hash))) return null;
-    return this.repo.createSession(user.id).sessionId;
+    return (await this.repo.createSession(user.id)).sessionId;
   }
 
-  getSession(sessionId: string): (AdminUser & { expires_at: string }) | null {
+  getSession(sessionId: string) {
     return this.repo.findSession(sessionId);
   }
 
-  logout(sessionId: string): void {
-    this.repo.deleteSession(sessionId);
+  async logout(sessionId: string): Promise<void> {
+    await this.repo.deleteSession(sessionId);
   }
 }

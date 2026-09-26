@@ -1,4 +1,4 @@
-import type { Database } from "bun:sqlite";
+import type { SQL } from "bun";
 import type {
   CreateProductInput,
   Product,
@@ -8,139 +8,69 @@ import type {
 } from "../types/index.ts";
 import type { IProductRepository } from "./interfaces.ts";
 
-type RawProduct = Omit<Product, "featured"> & { featured: number };
-type RawProductWithCategory = Omit<ProductWithCategory, "featured"> & { featured: number };
-type RawProductWithStock = Omit<ProductWithStock, "featured"> & { featured: number };
+type Raw<T> = Omit<T, "featured"> & { featured: boolean | number };
+const map = <T extends { price: number; compare_at_price: number | null }>(row: Raw<T>): T =>
+  ({
+    ...row,
+    price: Number(row.price),
+    compare_at_price: row.compare_at_price === null ? null : Number(row.compare_at_price),
+    featured: !!row.featured,
+  }) as unknown as T;
 
-function mapProduct(row: RawProduct): Product {
-  return { ...row, featured: !!row.featured };
-}
+export class PostgresProductRepository implements IProductRepository {
+  constructor(private db: SQL) {}
 
-function mapProductWithCategory(row: RawProductWithCategory): ProductWithCategory {
-  return { ...row, featured: !!row.featured };
-}
-
-function mapProductWithStock(row: RawProductWithStock): ProductWithStock {
-  return { ...row, featured: !!row.featured };
-}
-
-export class SqliteProductRepository implements IProductRepository {
-  constructor(private db: Database) {}
-
-  findBySlug(slug: string): ProductWithCategory | null {
-    const row = this.db
-      .query(
-        `SELECT p.*, c.name as category_name, c.slug as category_slug
-         FROM products p
-         JOIN categories c ON p.category_id = c.id
-         WHERE p.slug = ?`,
-      )
-      .get(slug) as RawProductWithCategory | null;
-    return row ? mapProductWithCategory(row) : null;
+  async findBySlug(slug: string) {
+    const row = (
+      await this.db`SELECT p.*, c.name AS category_name, c.slug AS category_slug
+      FROM products p JOIN categories c ON p.category_id = c.id WHERE p.slug = ${slug}`
+    )[0] as Raw<ProductWithCategory> | undefined;
+    return row ? map(row) : null;
   }
-
-  findFeatured(): ProductWithCategory[] {
-    const rows = this.db
-      .query(
-        `SELECT p.*, c.name as category_name, c.slug as category_slug
-         FROM products p
-         JOIN categories c ON p.category_id = c.id
-         WHERE p.featured = 1
-         ORDER BY p.created_at DESC`,
-      )
-      .all() as RawProductWithCategory[];
-    return rows.map(mapProductWithCategory);
+  async findFeatured() {
+    return (
+      await this.db`SELECT p.*, c.name AS category_name, c.slug AS category_slug
+      FROM products p JOIN categories c ON p.category_id = c.id WHERE p.featured = true ORDER BY p.created_at DESC`
+    ).map(map) as ProductWithCategory[];
   }
-
-  findByCategory(categoryId: number): ProductWithCategory[] {
-    const rows = this.db
-      .query(
-        `SELECT p.*, c.name as category_name, c.slug as category_slug
-         FROM products p
-         JOIN categories c ON p.category_id = c.id
-         WHERE p.category_id = ?
-         ORDER BY p.created_at DESC`,
-      )
-      .all(categoryId) as RawProductWithCategory[];
-    return rows.map(mapProductWithCategory);
+  async findByCategory(categoryId: number) {
+    return (
+      await this.db`SELECT p.*, c.name AS category_name, c.slug AS category_slug
+      FROM products p JOIN categories c ON p.category_id = c.id WHERE p.category_id = ${categoryId} ORDER BY p.created_at DESC`
+    ).map(map) as ProductWithCategory[];
   }
-
-  search(query: string): ProductWithCategory[] {
+  async search(query: string) {
     const like = `%${query}%`;
-    const rows = this.db
-      .query(
-        `SELECT p.*, c.name as category_name, c.slug as category_slug
-         FROM products p
-         JOIN categories c ON p.category_id = c.id
-         WHERE p.name LIKE ? OR p.description LIKE ?
-         ORDER BY p.name`,
-      )
-      .all(like, like) as RawProductWithCategory[];
-    return rows.map(mapProductWithCategory);
+    return (
+      await this.db`SELECT p.*, c.name AS category_name, c.slug AS category_slug
+      FROM products p JOIN categories c ON p.category_id = c.id
+      WHERE p.name ILIKE ${like} OR p.description ILIKE ${like} ORDER BY p.name`
+    ).map(map) as ProductWithCategory[];
   }
-
-  findAll(): ProductWithStock[] {
-    const rows = this.db
-      .query(
-        `SELECT p.*, c.name as category_name,
-                COALESCE(SUM(pv.stock), 0) as total_stock,
-                COUNT(pv.id) as variant_count
-         FROM products p
-         JOIN categories c ON p.category_id = c.id
-         LEFT JOIN product_variants pv ON pv.product_id = p.id
-         GROUP BY p.id
-         ORDER BY p.created_at DESC`,
-      )
-      .all() as RawProductWithStock[];
-    return rows.map(mapProductWithStock);
+  async findAll() {
+    return (
+      await this.db`SELECT p.*, c.name AS category_name, COALESCE(SUM(pv.stock), 0)::int AS total_stock,
+      COUNT(pv.id)::int AS variant_count FROM products p JOIN categories c ON p.category_id = c.id
+      LEFT JOIN product_variants pv ON pv.product_id = p.id GROUP BY p.id, c.name ORDER BY p.created_at DESC`
+    ).map(map) as ProductWithStock[];
   }
-
-  findById(id: number | string): Product | null {
-    const row = this.db.query("SELECT * FROM products WHERE id = ?").get(id) as RawProduct | null;
-    return row ? mapProduct(row) : null;
+  async findById(id: number | string) {
+    const row = (await this.db`SELECT * FROM products WHERE id = ${id}`)[0] as Raw<Product> | undefined;
+    return row ? map(row) : null;
   }
-
-  create(data: CreateProductInput): number {
-    const result = this.db
-      .prepare(
-        `INSERT INTO products (name, slug, description, price, compare_at_price, category_id, image_url, image_alt_text, featured)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      )
-      .run(
-        data.name,
-        data.slug,
-        data.description,
-        data.price,
-        data.compare_at_price,
-        data.category_id,
-        data.image_url,
-        data.image_alt_text ?? null,
-        data.featured ? 1 : 0,
-      );
-    return Number(result.lastInsertRowid);
+  async create(data: CreateProductInput) {
+    const [row] = await this
+      .db`INSERT INTO products (name, slug, description, price, compare_at_price, category_id, image_url, image_alt_text, featured)
+      VALUES (${data.name}, ${data.slug}, ${data.description}, ${data.price}, ${data.compare_at_price}, ${data.category_id}, ${data.image_url}, ${data.image_alt_text ?? null}, ${data.featured}) RETURNING id`;
+    return Number(row.id);
   }
-
-  update(id: number | string, data: UpdateProductInput): void {
-    this.db
-      .prepare(
-        `UPDATE products SET name = ?, slug = ?, description = ?, price = ?, compare_at_price = ?,
-         category_id = ?, image_url = ?, image_alt_text = ?, featured = ? WHERE id = ?`,
-      )
-      .run(
-        data.name,
-        data.slug,
-        data.description,
-        data.price,
-        data.compare_at_price,
-        data.category_id,
-        data.image_url,
-        data.image_alt_text ?? null,
-        data.featured ? 1 : 0,
-        id,
-      );
+  async update(id: number | string, data: UpdateProductInput) {
+    await this
+      .db`UPDATE products SET name = ${data.name}, slug = ${data.slug}, description = ${data.description}, price = ${data.price},
+      compare_at_price = ${data.compare_at_price}, category_id = ${data.category_id}, image_url = ${data.image_url},
+      image_alt_text = ${data.image_alt_text ?? null}, featured = ${data.featured} WHERE id = ${id}`;
   }
-
-  delete(id: number | string): void {
-    this.db.prepare("DELETE FROM products WHERE id = ?").run(id);
+  async delete(id: number | string) {
+    await this.db`DELETE FROM products WHERE id = ${id}`;
   }
 }

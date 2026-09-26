@@ -3,7 +3,7 @@ import type { CustomerAuthService } from "../../services/CustomerAuthService.ts"
 import type { ProductService } from "../../services/ProductService.ts";
 import type { ReviewService } from "../../services/ReviewService.ts";
 
-export function loadProductPage(
+export async function loadProductPage(
   services: {
     productService: ProductService;
     customerAuthService: CustomerAuthService;
@@ -12,14 +12,16 @@ export function loadProductPage(
   },
   input: { slug: string; visitorId: string; page: number; customerSessionId?: string },
 ) {
-  const product = services.productService.getBySlug(input.slug);
+  const product = await services.productService.getBySlug(input.slug);
   if (!product) return null;
 
-  const variants = services.productService.getVariants(product.id);
-  const customer = input.customerSessionId ? services.customerAuthService.getSession(input.customerSessionId) : null;
+  const variants = await services.productService.getVariants(product.id);
+  const customer = input.customerSessionId
+    ? await services.customerAuthService.getSession(input.customerSessionId)
+    : null;
 
-  const reviewPage = services.reviewService.getVisiblePage(product.id, input.page);
-  const ratingSummary = services.reviewService.getRatingSummary(product.id);
+  const reviewPage = await services.reviewService.getVisiblePage(product.id, input.page);
+  const ratingSummary = await services.reviewService.getRatingSummary(product.id);
 
   return {
     product,
@@ -29,10 +31,10 @@ export function loadProductPage(
     onSale: product.compare_at_price != null && product.compare_at_price > product.price,
     reviewPage,
     ratingSummary,
-    customerReview: customer ? services.reviewService.getCustomerReview(product.id, customer.id) : null,
+    customerReview: customer ? await services.reviewService.getCustomerReview(product.id, customer.id) : null,
     customer,
-    cartCount: services.cartService.getCount(input.visitorId),
+    cartCount: await services.cartService.getCount(input.visitorId),
   };
 }
 
-export type ProductPageData = NonNullable<ReturnType<typeof loadProductPage>>;
+export type ProductPageData = NonNullable<Awaited<ReturnType<typeof loadProductPage>>>;

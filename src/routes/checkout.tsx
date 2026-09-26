@@ -7,15 +7,15 @@ import { getAuthenticatedCustomer } from "../middleware/customerAuth.ts";
 export function createCheckout(services: Services) {
   const checkout = new Hono<AppEnv>();
 
-  checkout.get("/checkout", (c) => {
-    const customer = getAuthenticatedCustomer(c, services.customerAuthService);
-    const cart = services.cartService.getCart(c.get("visitorId"));
+  checkout.get("/checkout", async (c) => {
+    const customer = await getAuthenticatedCustomer(c, services.customerAuthService);
+    const cart = await services.cartService.getCart(c.get("visitorId"));
     if (cart.items.length === 0) return c.redirect("/cart");
     return c.html(<CheckoutPage {...cart} customer={customer} error={c.req.query("error")} />);
   });
 
   checkout.post("/checkout", async (c) => {
-    const customer = getAuthenticatedCustomer(c, services.customerAuthService);
+    const customer = await getAuthenticatedCustomer(c, services.customerAuthService);
     const body = await c.req.parseBody();
     const email = customer?.email ?? (body.email as string)?.trim();
     const name = (body.name as string)?.trim();
@@ -24,7 +24,7 @@ export function createCheckout(services: Services) {
     const postalCode = (body.postal_code as string)?.trim();
     if (!email || !name || !address || !city || !postalCode)
       return c.redirect("/checkout?error=Please fill in all required fields");
-    const orderNumber = services.orderService.placeOrder(
+    const orderNumber = await services.orderService.placeOrder(
       c.get("visitorId"),
       {
         email,
@@ -42,10 +42,10 @@ export function createCheckout(services: Services) {
     return c.redirect(`/order/${orderNumber}`);
   });
 
-  checkout.get("/order/:orderNumber", (c) => {
-    const count = services.cartService.getCount(c.get("visitorId"));
-    const customer = getAuthenticatedCustomer(c, services.customerAuthService);
-    const result = services.orderService.getOrderByNumberForVisitor(
+  checkout.get("/order/:orderNumber", async (c) => {
+    const count = await services.cartService.getCount(c.get("visitorId"));
+    const customer = await getAuthenticatedCustomer(c, services.customerAuthService);
+    const result = await services.orderService.getOrderByNumberForVisitor(
       c.req.param("orderNumber"),
       c.get("visitorId"),
       customer?.id,

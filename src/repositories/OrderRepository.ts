@@ -1,4 +1,4 @@
-import type { Database } from "bun:sqlite";
+import type { SQL } from "bun";
 import type {
   CartItem,
   Order,
@@ -10,115 +10,67 @@ import type {
 } from "../types/index.ts";
 import type { IOrderRepository } from "./interfaces.ts";
 
-export class SqliteOrderRepository implements IOrderRepository {
-  constructor(private db: Database) {}
+const mapOrder = (row: Order) => ({ ...row, subtotal: Number(row.subtotal), total: Number(row.total) });
+const mapSummary = (row: OrderSummary) => ({ ...row, total: Number(row.total) });
+const mapItem = (row: OrderItem) => ({ ...row, price: Number(row.price), total: Number(row.total) });
 
-  create(input: PlaceOrderInput, items: CartItem[], orderNumber: string, sessionId: string, customerId?: number): void {
+export class PostgresOrderRepository implements IOrderRepository {
+  constructor(private db: SQL) {}
+
+  async create(input: PlaceOrderInput, items: CartItem[], orderNumber: string, sessionId: string, customerId?: number) {
     const subtotal = items.reduce((sum, item) => sum + item.product_price * item.quantity, 0);
-
-    const insertItem = this.db.prepare(
-      `INSERT INTO order_items (order_id, product_name, product_slug, variant_size, variant_color, price, quantity, total)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    );
-    const decrementStock = this.db.prepare("UPDATE product_variants SET stock = stock - ? WHERE id = ?");
-
-    const run = this.db.transaction(() => {
-      const result = this.db
-        .query(
-          `INSERT INTO orders (order_number, customer_id, visitor_session_id, email, name, address, city, postal_code, country, phone, notes, subtotal, total)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        )
-        .run(
-          orderNumber,
-          customerId ?? null,
-          sessionId,
-          input.email,
-          input.name,
-          input.address,
-          input.city,
-          input.postal_code,
-          input.country,
-          input.phone,
-          input.notes,
-          subtotal,
-          subtotal,
-        );
-
-      const orderId = Number(result.lastInsertRowid);
-
+    await this.db.begin(async (tx) => {
+      const [order] =
+        await tx`INSERT INTO orders (order_number, customer_id, visitor_session_id, email, name, address, city, postal_code, country, phone, notes, subtotal, total)
+        VALUES (${orderNumber}, ${customerId ?? null}, ${sessionId}, ${input.email}, ${input.name}, ${input.address}, ${input.city}, ${input.postal_code}, ${input.country}, ${input.phone}, ${input.notes}, ${subtotal}, ${subtotal}) RETURNING id`;
       for (const item of items) {
-        insertItem.run(
-          orderId,
-          item.product_name,
-          item.product_slug,
-          item.size,
-          item.color,
-          item.product_price,
-          item.quantity,
-          item.product_price * item.quantity,
-        );
-        decrementStock.run(item.quantity, item.variant_id);
+        await tx`INSERT INTO order_items (order_id, product_name, product_slug, variant_size, variant_color, price, quantity, total)
+          VALUES (${order.id}, ${item.product_name}, ${item.product_slug}, ${item.size}, ${item.color}, ${item.product_price}, ${item.quantity}, ${item.product_price * item.quantity})`;
+        const [updated] = await tx`UPDATE product_variants
+          SET stock = stock - ${item.quantity}
+          WHERE id = ${item.variant_id} AND stock >= ${item.quantity}
+          RETURNING id`;
+        if (!updated) throw new Error("Insufficient stock");
       }
-
-      this.db.query("DELETE FROM cart_items WHERE session_id = ?").run(sessionId);
+      await tx`DELETE FROM cart_items WHERE session_id = ${sessionId}`;
     });
-
-    run();
   }
-
-  findByNumber(orderNumber: string): Order | null {
-    return this.db.query("SELECT * FROM orders WHERE order_number = ?").get(orderNumber) as Order | null;
+  async findByNumber(orderNumber: string) {
+    const row = (await this.db`SELECT * FROM orders WHERE order_number = ${orderNumber}`)[0] as Order | undefined;
+    return row ? mapOrder(row) : null;
   }
-
-  findById(id: number | string): Order | null {
-    return this.db.query("SELECT * FROM orders WHERE id = ?").get(id) as Order | null;
+  async findById(id: number | string) {
+    const row = (await this.db`SELECT * FROM orders WHERE id = ${id}`)[0] as Order | undefined;
+    return row ? mapOrder(row) : null;
   }
-
-  findAll(statusFilter?: string): OrderSummary[] {
-    let query = `
-      SELECT o.*, COUNT(oi.id) as item_count
-      FROM orders o
-      LEFT JOIN order_items oi ON o.id = oi.order_id
-    `;
-    const params: string[] = [];
-
-    if (statusFilter) {
-      query += " WHERE o.status = ?";
-      params.push(statusFilter);
-    }
-
-    query += " GROUP BY o.id ORDER BY o.created_at DESC";
-    return this.db.query(query).all(...params) as OrderSummary[];
+  async findAll(statusFilter?: string) {
+    const rows = statusFilter
+      ? await this
+          .db`SELECT o.*, COUNT(oi.id)::int AS item_count FROM orders o LEFT JOIN order_items oi ON o.id = oi.order_id WHERE o.status = ${statusFilter} GROUP BY o.id ORDER BY o.created_at DESC`
+      : await this
+          .db`SELECT o.*, COUNT(oi.id)::int AS item_count FROM orders o LEFT JOIN order_items oi ON o.id = oi.order_id GROUP BY o.id ORDER BY o.created_at DESC`;
+    return rows.map(mapSummary) as OrderSummary[];
   }
-
-  findByCustomer(customerId: number, email: string): OrderSummary[] {
-    return this.db
-      .query(
-        `SELECT o.*, COUNT(oi.id) AS item_count
-         FROM orders o
-         LEFT JOIN order_items oi ON o.id = oi.order_id
-          WHERE o.customer_id = ? OR (o.customer_id IS NULL AND LOWER(o.email) = LOWER(?))
-         GROUP BY o.id
-         ORDER BY o.created_at DESC`,
-      )
-      .all(customerId, email) as OrderSummary[];
+  async findByCustomer(customerId: number, email: string) {
+    return (
+      await this
+        .db`SELECT o.*, COUNT(oi.id)::int AS item_count FROM orders o LEFT JOIN order_items oi ON o.id = oi.order_id WHERE o.customer_id = ${customerId} OR (o.customer_id IS NULL AND LOWER(o.email) = LOWER(${email})) GROUP BY o.id ORDER BY o.created_at DESC`
+    ).map(mapSummary) as OrderSummary[];
   }
-
-  getStatusCounts(): StatusCount[] {
-    return this.db.query("SELECT status, COUNT(*) as count FROM orders GROUP BY status").all() as StatusCount[];
+  async getStatusCounts() {
+    return (await this.db`SELECT status, COUNT(*)::int AS count FROM orders GROUP BY status`) as StatusCount[];
   }
-
-  updateStatus(id: number | string, status: OrderStatus): void {
-    this.db.query("UPDATE orders SET status = ?, updated_at = datetime('now') WHERE id = ?").run(status, id);
+  async updateStatus(id: number | string, status: OrderStatus) {
+    await this
+      .db`UPDATE orders SET status = ${status}, updated_at = to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') WHERE id = ${id}`;
   }
-
-  getItems(orderId: number): OrderItem[] {
-    return this.db.query("SELECT * FROM order_items WHERE order_id = ?").all(orderId) as OrderItem[];
+  async getItems(orderId: number) {
+    return (await this.db`SELECT * FROM order_items WHERE order_id = ${orderId}`).map(mapItem) as OrderItem[];
   }
-
-  getItemsByOrderNumber(orderNumber: string): OrderItem[] {
-    return this.db
-      .query("SELECT oi.* FROM order_items oi JOIN orders o ON oi.order_id = o.id WHERE o.order_number = ?")
-      .all(orderNumber) as OrderItem[];
+  async getItemsByOrderNumber(orderNumber: string) {
+    return (
+      await this
+        .db`SELECT oi.* FROM order_items oi JOIN orders o ON oi.order_id = o.id WHERE o.order_number = ${orderNumber}`
+    ).map(mapItem) as OrderItem[];
   }
 }

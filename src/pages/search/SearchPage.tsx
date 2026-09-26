@@ -31,7 +31,7 @@ export function SearchPage({
           </h1>
           {products.length > 0 ? (
             <div class="grid grid-4">
-              {products.map((product) => (
+              {products.map((product, index) => (
                 <ProductCard
                   name={product.name}
                   slug={product.slug}
@@ -40,6 +40,7 @@ export function SearchPage({
                   image_url={product.image_url}
                   image_alt_text={product.image_alt_text}
                   category_name={product.category_name}
+                  priority={index === 0}
                 />
               ))}
             </div>

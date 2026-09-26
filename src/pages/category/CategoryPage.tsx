@@ -50,7 +50,7 @@ export function CategoryPage({
             <p style="color: var(--color-text-muted);">No products in this category yet.</p>
           ) : (
             <div class="grid grid-4">
-              {products.map((product) => (
+              {products.map((product, index) => (
                 <ProductCard
                   name={product.name}
                   slug={product.slug}
@@ -59,6 +59,7 @@ export function CategoryPage({
                   image_url={product.image_url}
                   image_alt_text={product.image_alt_text}
                   category_name={product.category_name}
+                  priority={index === 0}
                 />
               ))}
             </div>

@@ -25,12 +25,13 @@ export function HomePage({ data }: { data: HomePageData }) {
           <div class="container">
             <h2 class="section-title">Shop by Category</h2>
             <div class="grid grid-4">
-              {data.categories.map((category) => (
+              {data.categories.map((category, index) => (
                 <CategoryCard
                   name={category.name}
                   slug={category.slug}
                   description={category.description}
                   image_url={category.image_url}
+                  priority={index === 0}
                 />
               ))}
             </div>

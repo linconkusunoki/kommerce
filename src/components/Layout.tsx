@@ -18,6 +18,8 @@ export const Layout: FC<LayoutProps> = ({ title, description, children, styles }
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta name="description" content={pageDescription} />
+        <link rel="icon" href="/public/favicon.svg" type="image/svg+xml" />
+        <link rel="preconnect" href="https://images.unsplash.com" crossorigin="anonymous" />
         <title>{pageTitle}</title>
         <link rel="stylesheet" href="/styles/core.css" />
         {styles?.map((href) => (

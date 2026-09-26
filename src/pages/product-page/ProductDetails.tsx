@@ -1,13 +1,23 @@
 import type { ProductPageData } from "./loadProductPage.ts";
+import { responsiveImage } from "../../lib/image.ts";
 
 export function ProductDetails({ data }: { data: ProductPageData }) {
   const { product, variants, sizes, colors, onSale } = data;
+  const image = responsiveImage(product.image_url, "(max-width: 768px) calc(100vw - 3rem), 50vw");
 
   return (
     <div class="product-detail">
       <div class="product-detail-image">
-        {product.image_url ? (
-          <img src={product.image_url} alt={product.image_alt_text || product.name} />
+        {image ? (
+          <img
+            src={image.src}
+            srcset={image.srcSet}
+            sizes={image.sizes}
+            alt={product.image_alt_text || product.name}
+            width="800"
+            height="800"
+            fetchpriority="high"
+          />
         ) : (
           <div class="product-detail-placeholder" />
         )}
@@ -49,7 +59,7 @@ export function ProductDetails({ data }: { data: ProductPageData }) {
           </div>
           <div class="product-option">
             <label class="product-option-label">Quantity</label>
-            <select name="quantity" class="quantity-select">
+            <select id="quantity" name="quantity" class="quantity-select">
               {[1, 2, 3, 4, 5].map((quantity) => (
                 <option value={String(quantity)}>{quantity}</option>
               ))}

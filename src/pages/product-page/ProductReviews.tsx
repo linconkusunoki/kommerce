@@ -15,7 +15,7 @@ export function ProductReviews({ data }: { data: ProductPageData }) {
         <aside class="reviews-sidebar">
           <div class="rating-summary">
             <strong>{ratingSummary.average.toFixed(1)}</strong>
-            <span class="review-stars" aria-label={`${ratingSummary.average.toFixed(1)} out of 5 stars`}>
+            <span class="review-stars" role="img" aria-label={`${ratingSummary.average.toFixed(1)} out of 5 stars`}>
               <span aria-hidden="true">
                 {"\u2605".repeat(Math.round(ratingSummary.average))}
                 {"\u2606".repeat(5 - Math.round(ratingSummary.average))}
@@ -113,7 +113,7 @@ export function ProductReviews({ data }: { data: ProductPageData }) {
                     </div>
                     <time datetime={review.created_at}>{review.created_at}</time>
                   </div>
-                  <div class="review-rating" aria-label={`${review.rating} out of 5 stars`}>
+                  <div class="review-rating" role="img" aria-label={`${review.rating} out of 5 stars`}>
                     <span aria-hidden="true">
                       {"\u2605".repeat(review.rating)}
                       {"\u2606".repeat(5 - review.rating)}

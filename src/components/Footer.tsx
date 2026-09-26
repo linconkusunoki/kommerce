@@ -9,12 +9,12 @@ export const Footer: FC = () => {
           <p>Your one-stop clothing store.</p>
         </div>
         <div class="footer-links">
-          <h4>Shop</h4>
+          <h2>Shop</h2>
           <a href="/#categories">Categories</a>
           <a href="/#featured">Featured</a>
         </div>
         <div class="footer-links">
-          <h4>Account</h4>
+          <h2>Account</h2>
           <a href="/admin/login">Admin</a>
         </div>
       </div>

@@ -11,6 +11,7 @@
     "typecheck": "bunx tsc --noEmit",
     "build": "bun run format:check && bun build src/index.tsx --outdir dist --target bun",
     "test": "bun test src/tests",
+    "audit:pagespeed": "node scripts/pagespeed.mjs",
     "mcp": "bun run src/mcp.ts",
     "format": "prettier . --write",
     "format:check": "prettier . --check"

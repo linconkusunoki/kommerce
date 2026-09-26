@@ -1,6 +1,6 @@
 .product-detail {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 3rem;
   padding: 1rem 0 4rem;
 }
@@ -231,6 +231,7 @@
   display: flex;
   justify-content: space-between;
   gap: 1rem;
+  flex-wrap: wrap;
   color: var(--color-text-muted);
   font-size: 0.8rem;
   padding-bottom: 0.75rem;
@@ -345,5 +346,10 @@
   }
   .review-form-actions .btn {
     width: 100%;
+  }
+
+  .reviews-content-header {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }

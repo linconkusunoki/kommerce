@@ -1,6 +1,7 @@
 @scope (.admin-table) {
   :scope {
     width: 100%;
+    min-width: 620px;
     border-collapse: collapse;
     background: var(--color-surface);
     border: 1px solid var(--color-border);
@@ -35,4 +36,12 @@
 .admin-actions {
   display: flex;
   gap: 0.5rem;
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .admin-table {
+    display: block;
+    overflow-x: auto;
+  }
 }

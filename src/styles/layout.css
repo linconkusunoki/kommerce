@@ -2,6 +2,7 @@
   max-width: var(--max-width);
   margin: 0 auto;
   padding: 0 1.5rem;
+  width: 100%;
 }
 
 .section {
@@ -22,6 +23,10 @@
   display: grid;
   gap: 1.5rem;
 }
+
+.grid > * {
+  min-width: 0;
+}
 .grid-4 {
   grid-template-columns: repeat(4, 1fr);
 }
@@ -33,7 +38,21 @@
 }
 
 @media (max-width: 500px) {
+  .container {
+    padding: 0 1rem;
+  }
+
+  .section {
+    padding: 3rem 0;
+  }
+
+  .section-title {
+    font-size: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
   .grid-4 {
     grid-template-columns: 1fr;
+    gap: 1rem;
   }
 }

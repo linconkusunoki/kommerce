@@ -1,6 +1,6 @@
 .checkout-layout {
   display: grid;
-  grid-template-columns: 1fr 380px;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 380px);
   gap: 3rem;
   align-items: start;
 }

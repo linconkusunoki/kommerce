@@ -16,7 +16,7 @@
 
 .order-admin-grid {
   display: grid;
-  grid-template-columns: 1fr 320px;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
   gap: 1.5rem;
   align-items: start;
 }

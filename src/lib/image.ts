@@ -1,4 +1,4 @@
-const imageWidths = [320, 500, 800];
+const imageWidths = [320, 400, 500, 800];
 
 function imageUrl(source: string, width: number): string {
   try {

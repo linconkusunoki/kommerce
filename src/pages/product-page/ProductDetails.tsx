@@ -58,7 +58,9 @@ export function ProductDetails({ data }: { data: ProductPageData }) {
             </div>
           </div>
           <div class="product-option">
-            <label class="product-option-label">Quantity</label>
+            <label class="product-option-label" for="quantity">
+              Quantity
+            </label>
             <select id="quantity" name="quantity" class="quantity-select">
               {[1, 2, 3, 4, 5].map((quantity) => (
                 <option value={String(quantity)}>{quantity}</option>

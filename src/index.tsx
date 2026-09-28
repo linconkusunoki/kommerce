@@ -78,6 +78,11 @@ app.use(logger());
 // CSRF token endpoint for JS clients
 app.get("/csrf-token", (c) => c.json({ ok: true }));
 
+app.get("/api/categories", async (c) => {
+  const categories = await services.categoryService.getAll();
+  return c.json(categories.map(({ name, slug }) => ({ name, slug })));
+});
+
 // Chat API
 app.route("/", createChatRoute(chat));
 

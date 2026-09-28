@@ -10,7 +10,7 @@ export function HomePage({ data }: { data: HomePageData }) {
     <Layout
       styles={["/styles/pages/hero.css", "/styles/components/product-card.css", "/styles/components/category-card.css"]}
     >
-      <Header cartCount={data.cartCount} />
+      <Header cartCount={data.cartCount} categories={data.categories} />
       <main>
         <section class="hero">
           <div class="container">

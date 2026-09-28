@@ -332,14 +332,14 @@ export const Layout: FC<LayoutProps> = ({ title, description, children, styles }
             fetch('/api/cart/count', { cache: 'no-store' })
               .then(r => r.json())
               .then(({ count }) => {
-                const badge = document.getElementById('cart-badge');
-                if (!badge) return;
-                if (count > 0) {
-                  badge.textContent = count;
-                  badge.style.display = '';
-                } else {
-                  badge.style.display = 'none';
-                }
+                document.querySelectorAll('.cart-badge').forEach((badge) => {
+                  if (count > 0) {
+                    badge.textContent = count;
+                    badge.style.display = '';
+                  } else {
+                    badge.style.display = 'none';
+                  }
+                });
               });
           }
           updateCartBadge();

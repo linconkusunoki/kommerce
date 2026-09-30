@@ -41,7 +41,7 @@ app.use("*", compress());
 // Static files with long-term caching
 app.use("/styles/*", async (c, next) => {
   await next();
-  c.header("Cache-Control", "public, max-age=31536000, immutable");
+  c.header("Cache-Control", process.env.NODE_ENV === "production" ? "public, max-age=31536000, immutable" : "no-cache");
 });
 app.use("/styles/*", serveStatic({ root: "./src" }));
 app.use("/public/*", serveStatic({ root: "./" }));

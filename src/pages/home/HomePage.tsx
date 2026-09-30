@@ -13,12 +13,33 @@ export function HomePage({ data }: { data: HomePageData }) {
       <Header cartCount={data.cartCount} categories={data.categories} />
       <main>
         <section class="hero">
+          <img
+            class="hero-image"
+            src="/public/hero.webp"
+            alt="Model in a dark green jacket on a neon-lit city street at night"
+            width="2752"
+            height="1536"
+            fetchpriority="high"
+            decoding="async"
+          />
           <div class="container">
-            <h1>Discover Your Style</h1>
-            <p>Quality clothing for every occasion, from head to toe.</p>
-            <a href="#categories" class="btn btn-primary btn-lg">
-              Shop Now
-            </a>
+            <div class="hero-content">
+              <p class="hero-eyebrow">New Season Arrivals</p>
+              <h1>Discover Your Style</h1>
+              <p class="hero-sub">Quality clothing for every occasion, from head to toe.</p>
+              <div class="hero-actions">
+                <a href="#categories" class="btn btn-lg hero-cta-primary">
+                  Shop Now
+                </a>
+                <a href="#featured" class="btn btn-lg hero-cta-ghost">
+                  Best Sellers
+                </a>
+              </div>
+              <ul class="hero-points">
+                <li>Free shipping over $50</li>
+                <li>30-day returns</li>
+              </ul>
+            </div>
           </div>
         </section>
         <section id="categories" class="section">

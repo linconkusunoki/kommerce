@@ -1,6 +1,8 @@
 @scope (.header) {
   :scope {
-    background: var(--color-surface);
+    background: color-mix(in srgb, var(--color-surface) 70%, transparent);
+    backdrop-filter: blur(12px) saturate(150%);
+    -webkit-backdrop-filter: blur(12px) saturate(150%);
     border-bottom: 1px solid var(--color-border);
     position: sticky;
     top: 0;

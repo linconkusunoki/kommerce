@@ -18,8 +18,8 @@ export const AdminLayout: FC<AdminLayoutProps> = ({ title, children }) => {
     <Layout title={title ? `Admin - ${title}` : "Admin"} styles={ADMIN_STYLES}>
       <div class="admin-wrapper">
         <aside class="admin-sidebar">
-          <a href="/admin" class="admin-logo">
-            Kommerce Admin
+          <a href="/admin" class="admin-logo logo">
+            <span class="logo-k">K</span>ommerce Admin
           </a>
           <nav class="admin-nav">
             <a href="/admin">Dashboard</a>

@@ -1,11 +1,12 @@
 import type { FC } from "hono/jsx";
+import { Logo } from "./Logo.tsx";
 
 export const Footer: FC = () => {
   return (
     <footer class="footer">
       <div class="container footer-inner">
         <div class="footer-brand">
-          <span class="logo">Kommerce</span>
+          <Logo />
           <p>Your one-stop clothing store.</p>
         </div>
         <div class="footer-links">

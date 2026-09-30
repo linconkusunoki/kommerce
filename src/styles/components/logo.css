@@ -1,0 +1,33 @@
+.logo {
+  --logo-mark: linear-gradient(135deg, var(--color-accent) 25%, #7c3aed);
+  --logo-mark-ink: #fff;
+  --logo-ink: var(--color-text);
+
+  display: inline-block;
+  font-size: clamp(1.25rem, 1.1rem + 0.8vw, 1.5rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  white-space: nowrap;
+  color: var(--logo-ink);
+  text-decoration: none;
+}
+
+.logo-k {
+  display: inline-block;
+  margin-right: 0.07em;
+  padding: 0.1em 0.16em;
+  border-radius: 0.22em;
+  background: var(--logo-mark);
+  color: var(--logo-mark-ink);
+  font-size: 0.85em;
+  line-height: 1;
+}
+
+/* Dark surfaces: footer and admin sidebar */
+.footer-brand .logo,
+.admin-logo {
+  --logo-mark: linear-gradient(135deg, var(--color-accent-on-dark) 25%, #c4b5fd);
+  --logo-mark-ink: var(--color-primary);
+  --logo-ink: white;
+}

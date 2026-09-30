@@ -1,5 +1,6 @@
 import type { FC } from "hono/jsx";
 import type { Category } from "../types/index.ts";
+import { Logo } from "./Logo.tsx";
 
 type HeaderProps = {
   cartCount?: number;
@@ -10,9 +11,7 @@ export const Header: FC<HeaderProps> = ({ cartCount = 0, categories = [] }) => {
   return (
     <header class="header">
       <div class="container header-inner">
-        <a href="/" class="logo">
-          Kommerce
-        </a>
+        <Logo href="/" />
         <div class="mobile-actions">
           <button
             type="button"

@@ -8,6 +8,7 @@
 @import "./layout.css" layer(layout);
 
 /* === Core Components (always needed) === */
+@import "./components/logo.css" layer(components);
 @import "./components/header.css" layer(components);
 @import "./components/footer.css" layer(components);
 @import "./components/buttons.css" layer(components);

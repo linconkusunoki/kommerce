@@ -9,6 +9,7 @@ type ProductCardProps = {
   image_url: string | null;
   image_alt_text?: string | null;
   category_name?: string;
+  image_sizes?: string;
   priority?: boolean;
 };
 
@@ -20,10 +21,11 @@ export const ProductCard: FC<ProductCardProps> = ({
   image_url,
   image_alt_text,
   category_name,
+  image_sizes = "(max-width: 500px) calc(100vw - 3rem), (max-width: 900px) 50vw, 25vw",
   priority = false,
 }) => {
   const onSale = compare_at_price != null && compare_at_price > price;
-  const image = responsiveImage(image_url, "(max-width: 500px) calc(100vw - 3rem), (max-width: 900px) 50vw, 25vw");
+  const image = responsiveImage(image_url, image_sizes);
 
   return (
     <a href={`/products/${slug}`} class="product-card">
@@ -49,8 +51,8 @@ export const ProductCard: FC<ProductCardProps> = ({
         {category_name && <span class="product-card-category">{category_name}</span>}
         <h2 class="product-card-title">{name}</h2>
         <div class="product-card-price">
-          <span class={onSale ? "price price-sale" : "price"}>${price.toFixed(2)}</span>
           {onSale && <span class="price price-compare">${compare_at_price!.toFixed(2)}</span>}
+          <span class={onSale ? "price price-sale" : "price"}>${price.toFixed(2)}</span>
         </div>
       </div>
     </a>

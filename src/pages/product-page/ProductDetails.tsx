@@ -28,8 +28,8 @@ export function ProductDetails({ data }: { data: ProductPageData }) {
         <span class="product-detail-category">{product.category_name}</span>
         <h1 class="product-detail-title">{product.name}</h1>
         <div class="product-detail-price">
-          <span class={onSale ? "price-lg price-sale" : "price-lg"}>${product.price.toFixed(2)}</span>
           {onSale && <span class="price-lg price-compare">${product.compare_at_price!.toFixed(2)}</span>}
+          <span class={onSale ? "price-lg price-sale" : "price-lg"}>${product.price.toFixed(2)}</span>
         </div>
         {product.description && <p class="product-detail-desc">{product.description}</p>}
 

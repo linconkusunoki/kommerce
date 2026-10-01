@@ -33,6 +33,12 @@ export class PostgresProductRepository implements IProductRepository {
       FROM products p JOIN categories c ON p.category_id = c.id WHERE p.featured = true ORDER BY p.created_at DESC`
     ).map(map) as ProductWithCategory[];
   }
+  async findRecent(limit: number) {
+    return (
+      await this.db`SELECT p.*, c.name AS category_name, c.slug AS category_slug
+      FROM products p JOIN categories c ON p.category_id = c.id ORDER BY p.created_at DESC LIMIT ${limit}`
+    ).map(map) as ProductWithCategory[];
+  }
   async findByCategory(categoryId: number) {
     return (
       await this.db`SELECT p.*, c.name AS category_name, c.slug AS category_slug

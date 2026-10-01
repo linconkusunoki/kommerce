@@ -7,6 +7,7 @@ function mockProductRepo(overrides: Partial<IProductRepository> = {}): IProductR
   return {
     findBySlug: mock(async () => null),
     findFeatured: mock(async () => []),
+    findRecent: mock(async () => []),
     findByCategory: mock(async () => []),
     search: mock(async () => []),
     findAll: mock(async () => []),
@@ -48,6 +49,15 @@ describe("ProductService.getBySlug", () => {
     const repo = mockProductRepo({ findBySlug: mock(async () => fakeProduct) });
     const service = new ProductService(repo, mockVariantRepo(), mockStorage());
     expect(await service.getBySlug("shirt")).toEqual(fakeProduct);
+  });
+});
+
+describe("ProductService.getRecent", () => {
+  test("delegates limit to repo.findRecent", async () => {
+    const findRecent = mock(async () => [] as any[]);
+    const service = new ProductService(mockProductRepo({ findRecent }), mockVariantRepo(), mockStorage());
+    await service.getRecent(3);
+    expect(findRecent).toHaveBeenCalledWith(3);
   });
 });
 

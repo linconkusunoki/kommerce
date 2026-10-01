@@ -51,6 +51,7 @@ export interface IVariantRepository {
 export interface IProductRepository {
   findBySlug(slug: string): Promise<ProductWithCategory | null>;
   findFeatured(): Promise<ProductWithCategory[]>;
+  findRecent(limit: number): Promise<ProductWithCategory[]>;
   findByCategory(categoryId: number): Promise<ProductWithCategory[]>;
   search(query: string): Promise<ProductWithCategory[]>;
   findAll(): Promise<ProductWithStock[]>;

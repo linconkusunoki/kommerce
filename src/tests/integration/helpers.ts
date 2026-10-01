@@ -51,14 +51,15 @@ export async function seedCategory(db: SQL, overrides: Partial<{ name: string; s
 export async function seedProduct(
   db: SQL,
   categoryId: number,
-  overrides: Partial<{ name: string; slug: string; price: number; featured: boolean }> = {},
+  overrides: Partial<{ name: string; slug: string; price: number; featured: boolean; created_at: string }> = {},
 ) {
   const name = overrides.name ?? "Test Product";
   const slug = overrides.slug ?? "test-product";
   const price = overrides.price ?? 29.99;
   const featured = overrides.featured ?? false;
-  const [row] = await db`INSERT INTO products (name, slug, description, price, category_id, featured)
-    VALUES (${name}, ${slug}, '', ${price}, ${categoryId}, ${featured}) RETURNING id`;
+  const createdAt = overrides.created_at ?? new Date().toISOString();
+  const [row] = await db`INSERT INTO products (name, slug, description, price, category_id, featured, created_at)
+    VALUES (${name}, ${slug}, '', ${price}, ${categoryId}, ${featured}, ${createdAt}) RETURNING id`;
   return Number(row.id);
 }
 

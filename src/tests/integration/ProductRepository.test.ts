@@ -37,6 +37,22 @@ integrationDescribe("ProductRepository.findFeatured", () => {
   });
 });
 
+integrationDescribe("ProductRepository.findRecent", () => {
+  test("returns newest products first, capped at the limit", async () => {
+    const slugs = ["oldest", "middle", "newest", "newest-plus-one"];
+    for (let index = 0; index < slugs.length; index++) {
+      await seedProduct(db, categoryId, { slug: slugs[index]!, created_at: `2026-01-0${index + 1}T00:00:00.000Z` });
+    }
+    const results = await repo.findRecent(3);
+    expect(results.map((p) => p.slug)).toEqual(["newest-plus-one", "newest", "middle"]);
+  });
+
+  test("includes non-featured products", async () => {
+    await seedProduct(db, categoryId, { slug: "plain", featured: false });
+    expect(await repo.findRecent(3)).toHaveLength(1);
+  });
+});
+
 integrationDescribe("ProductRepository.findByCategory", () => {
   test("returns products in given category", async () => {
     const otherCategoryId = await seedCategory(db, { slug: "other" });

@@ -6,16 +6,18 @@ export async function loadHomePage(
   services: { cartService: CartService; categoryService: CategoryService; productService: ProductService },
   visitorId: string,
 ) {
-  const [cartCount, categories, featured] = await Promise.all([
+  const [cartCount, categories, featured, recent] = await Promise.all([
     services.cartService.getCount(visitorId),
     services.categoryService.getAll(),
     services.productService.getFeatured(),
+    services.productService.getRecent(3),
   ]);
 
   return {
     cartCount,
     categories,
     featured,
+    recent,
   };
 }
 

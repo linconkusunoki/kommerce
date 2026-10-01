@@ -17,6 +17,10 @@ export class ProductService {
     return this.repo.findFeatured();
   }
 
+  async getRecent(limit: number) {
+    return this.repo.findRecent(limit);
+  }
+
   async getByCategory(categoryId: number) {
     return this.repo.findByCategory(categoryId);
   }

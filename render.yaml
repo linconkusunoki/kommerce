@@ -6,20 +6,13 @@ services:
     plan: free
     healthCheckPath: /health
     envVars:
+      # Neon (free tier): ep-plain-haze-b4n37sz2.c-6.us-east-2.aws.neon.tech/neondb
+      # Value is kept out of git; set DATABASE_URL in the Render dashboard.
       - key: DATABASE_URL
-        fromDatabase:
-          name: kommerce-db
-          property: connectionString
+        sync: false
       - key: GEMINI_API_KEY
         sync: false
       - key: ADMIN_INITIAL_PASSWORD
         sync: false
       - key: RESEND_API_KEY
         sync: false
-
-databases:
-  - name: kommerce-db
-    region: oregon
-    plan: free
-    databaseName: kommerce
-    user: kommerce

@@ -15,10 +15,12 @@ export function HomePage({ data }: { data: HomePageData }) {
         <section class="hero">
           <img
             class="hero-image"
-            src="/public/hero.webp"
+            src="/public/hero-1024.jpg"
+            srcset="/public/hero-640.jpg 640w, /public/hero-1024.jpg 1024w, /public/hero-1600.jpg 1600w"
+            sizes="100vw"
             alt="Model in a dark green jacket on a neon-lit city street at night"
-            width="2752"
-            height="1536"
+            width="1600"
+            height="894"
             fetchpriority="high"
             decoding="async"
           />

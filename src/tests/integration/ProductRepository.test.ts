@@ -73,6 +73,16 @@ integrationDescribe("ProductRepository.search", () => {
     expect(results[0]!.name).toBe("Blue Shirt");
   });
 
+  test("finds products by category name", async () => {
+    const tShirtsId = await seedCategory(db, { name: "T-Shirts", slug: "t-shirts" });
+    await seedProduct(db, tShirtsId, { name: "Essential Crew Tee", slug: "essential-crew-tee" });
+
+    const results = await repo.search("t-shirt");
+
+    expect(results).toHaveLength(1);
+    expect(results[0]!.name).toBe("Essential Crew Tee");
+  });
+
   test("returns empty array when no match", async () => {
     expect(await repo.search("xyz-nonexistent")).toEqual([]);
   });

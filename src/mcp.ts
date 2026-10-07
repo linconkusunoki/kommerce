@@ -58,10 +58,20 @@ server.tool(
 
 server.tool(
   "get_product_variants",
-  "Get all variants (size/color/stock) for a product",
-  { product_id: z.union([z.number(), z.string()]).describe("Product ID") },
-  async ({ product_id }) => {
-    const variants = await services.productService.getVariants(product_id);
+  "Get all variants (size/color/stock) for a product by ID or slug",
+  {
+    product_id: z.union([z.number(), z.string()]).optional().describe("Product ID"),
+    slug: z.string().optional().describe("Product slug"),
+  },
+  async ({ product_id, slug }) => {
+    if (!product_id && !slug) {
+      return { content: [{ type: "text", text: "Provide either product_id or slug" }], isError: true };
+    }
+    const product = slug ? await services.productService.getBySlug(slug) : null;
+    if (slug && !product) {
+      return { content: [{ type: "text", text: "Product not found" }], isError: true };
+    }
+    const variants = await services.productService.getVariants(product?.id ?? product_id!);
     return {
       content: [{ type: "text", text: JSON.stringify(variants, null, 2) }],
     };

@@ -50,7 +50,11 @@ export class PostgresProductRepository implements IProductRepository {
     return (
       await this.db`SELECT p.*, c.name AS category_name, c.slug AS category_slug
       FROM products p JOIN categories c ON p.category_id = c.id
-      WHERE p.name ILIKE ${like} OR p.description ILIKE ${like} ORDER BY p.name`
+      WHERE p.name ILIKE ${like}
+        OR p.description ILIKE ${like}
+        OR c.name ILIKE ${like}
+        OR c.slug ILIKE ${like}
+      ORDER BY p.name`
     ).map(map) as ProductWithCategory[];
   }
   async findAll() {

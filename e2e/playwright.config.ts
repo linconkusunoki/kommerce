@@ -9,7 +9,11 @@ export default defineConfig({
   globalSetup: "./global-setup.ts",
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 1 : 0,
+  // A remote target on a free tier can drop a connection or stall, which fails
+  // tests with no code defect behind them. Specs are idempotent — unique
+  // fixtures, cleaned up in afterEach — so one retry absorbs that blip. Local
+  // runs stay unretried so real bugs are not masked.
+  retries: isLocal ? (process.env.CI ? 1 : 0) : 1,
   // A remote target shares one database, so keep those runs serial and avoid
   // destructive fixtures racing each other.
   workers: isLocal ? undefined : 1,

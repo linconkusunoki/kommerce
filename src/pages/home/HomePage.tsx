@@ -15,8 +15,8 @@ export function HomePage({ data }: { data: HomePageData }) {
         <section class="hero">
           <img
             class="hero-image"
-            src="/public/hero-1024.jpg"
-            srcset="/public/hero-640.jpg 640w, /public/hero-1024.jpg 1024w, /public/hero-1600.jpg 1600w"
+            src="/public/hero-1024.webp"
+            srcset="/public/hero-640.webp 640w, /public/hero-1024.webp 1024w, /public/hero-1600.webp 1600w"
             sizes="100vw"
             alt="Model in a dark green jacket on a neon-lit city street at night"
             width="1600"

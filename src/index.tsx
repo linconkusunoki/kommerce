@@ -44,6 +44,13 @@ app.use("/styles/*", async (c, next) => {
   c.header("Cache-Control", process.env.NODE_ENV === "production" ? "public, max-age=31536000, immutable" : "no-cache");
 });
 app.use("/styles/*", serveStatic({ root: "./src" }));
+app.use("/public/*", async (c, next) => {
+  await next();
+  c.header(
+    "Cache-Control",
+    process.env.NODE_ENV === "production" ? "public, max-age=604800, must-revalidate" : "no-cache",
+  );
+});
 app.use("/public/*", serveStatic({ root: "./" }));
 
 app.get("/health", async (c) => {

@@ -7,17 +7,26 @@
     "dev": "bun run src/index.tsx",
     "db:migrate": "bun run scripts/migrate.ts",
     "db:seed": "bun run scripts/seed.ts",
+    "db:reset-admin": "bun run scripts/reset-admin.ts",
     "validate-env": "bun run scripts/validate-env.ts",
     "typecheck": "bunx tsc --noEmit",
     "build": "bun run format:check && bun build src/index.tsx --outdir dist --target bun",
     "test": "bun test src/tests",
+    "test:e2e": "playwright test --config=e2e/playwright.config.ts",
+    "test:e2e:prod": "E2E_TARGET=prod playwright test --config=e2e/playwright.config.ts",
+    "test:e2e:smoke": "playwright test --config=e2e/playwright.config.ts --grep-invert @destructive",
+    "test:e2e:prod:smoke": "E2E_TARGET=prod playwright test --config=e2e/playwright.config.ts --grep-invert @destructive",
+    "test:e2e:ui": "playwright test --config=e2e/playwright.config.ts --ui",
+    "typecheck:e2e": "tsc --noEmit -p e2e/tsconfig.json",
     "audit:pagespeed": "node scripts/pagespeed.mjs",
     "mcp": "bun run src/mcp.ts",
     "format": "prettier . --write",
     "format:check": "prettier . --check"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@types/bun": "latest",
+    "dotenv": "^18.0.6",
     "prettier": "^3.6.2"
   },
   "peerDependencies": {

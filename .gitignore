@@ -5,6 +5,8 @@ node_modules
 out
 dist
 reports
+test-results
+playwright-report
 *.tgz
 
 # local SQLite artifacts

@@ -1,0 +1,10 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    // E2E specs drive a real browser, so they need DOM types the server build excludes.
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "types": ["node"]
+  },
+  "include": ["./**/*.ts"],
+  "exclude": ["../node_modules", "../dist"]
+}
